@@ -1,4 +1,4 @@
-# InternMatch — Internship Recommender
+# Nextern — Internship Recommender
 
 A content-based recommender that matches students to internships. Every company is
 described by the skills it has historically required; a student is scored against each
@@ -97,8 +97,8 @@ pip install pytest && pytest -q
 ## Docker
 
 ```bash
-docker build -t internmatch .
-docker run -p 7860:7860 internmatch
+docker build -t nextern .
+docker run -p 7860:7860 nextern
 ```
 
 ## Deployment

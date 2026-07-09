@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: internmatch
+    name: nextern
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
