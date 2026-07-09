@@ -1,12 +1,16 @@
 """Flask server for the internship recommender: serves the UI and the JSON API."""
 import os
+import time
+from collections import defaultdict, deque
+from functools import wraps
 
 import joblib
 from flask import Flask, jsonify, request, send_from_directory
 
-from recommender import recommend
+import copilot
+from recommender import build_bundle, recommend, score_company, split_skills
+from skills import canonical_set, extract_skills_from_text
 from train import DATA_PATH, MODEL_PATH, load_dataset
-from recommender import build_bundle
 
 APP_DIR = os.path.dirname(__file__)
 STATIC_DIR = os.path.join(APP_DIR, "static")
@@ -14,6 +18,26 @@ STATIC_DIR = os.path.join(APP_DIR, "static")
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="")
 
 _bundle = None
+
+# Simple per-IP sliding-window rate limiter. In-memory is fine: the free tier runs a
+# single worker, and the goal is basic abuse protection, not distributed quotas.
+_hits: dict = defaultdict(deque)
+
+def rate_limit(max_per_minute: int):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            ip = request.headers.get("X-Forwarded-For", request.remote_addr or "?").split(",")[0].strip()
+            now = time.time()
+            window = _hits[f"{fn.__name__}:{ip}"]
+            while window and now - window[0] > 60:
+                window.popleft()
+            if len(window) >= max_per_minute:
+                return jsonify({"ok": False, "error": "Rate limit exceeded — try again in a minute"}), 429
+            window.append(now)
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def get_bundle() -> dict:
@@ -38,7 +62,13 @@ def health():
     return jsonify({"ok": True, "model_loaded": os.path.exists(MODEL_PATH)})
 
 
+@app.route("/api/config")
+def api_config():
+    return jsonify({"ok": True, "copilot_enabled": copilot.enabled()})
+
+
 @app.route("/api/predict", methods=["POST"])
+@rate_limit(30)
 def api_predict():
     data = request.get_json(force=True, silent=True)
     if not data:
@@ -68,6 +98,87 @@ def api_predict():
                 }
                 for p in picks
             ],
+        }
+    )
+
+
+@app.route("/api/match_jd", methods=["POST"])
+@rate_limit(30)
+def api_match_jd():
+    """Match a student against a pasted job description instead of the seeded companies."""
+    data = request.get_json(force=True, silent=True) or {}
+    jd_text = str(data.get("jd_text", "")).strip()
+    student_skills = canonical_set(split_skills(data.get("Technical skills", "")))
+    if not jd_text:
+        return jsonify({"ok": False, "error": "Please paste a job description"}), 400
+    if not student_skills:
+        return jsonify({"ok": False, "error": "Please provide your skills"}), 400
+
+    bundle = get_bundle()
+    required = extract_skills_from_text(jd_text, extra_vocabulary=bundle["skill_frequency"])
+    if not required:
+        return jsonify({"ok": False, "error": "No recognisable skills found in that job description"}), 400
+
+    sc = score_company(required, student_skills)
+    return jsonify(
+        {
+            "ok": True,
+            "jd_skills": required,
+            "coverage": round(sc["coverage"] * 100, 1),
+            "matched_skills": sc["matched"],
+            "related_skills": sc["related"],
+            "gap_skills": sc["gaps"],
+        }
+    )
+
+
+@app.route("/api/copilot", methods=["POST"])
+@rate_limit(10)
+def api_copilot():
+    """Resume text -> Claude skill extraction -> ranked matches -> coaching rationale."""
+    if not copilot.enabled():
+        return jsonify({"ok": False, "error": "Copilot is not configured on this server (missing API key)"}), 503
+
+    data = request.get_json(force=True, silent=True) or {}
+    text = str(data.get("text", "")).strip()
+    if len(text) < 40:
+        return jsonify({"ok": False, "error": "Paste a bit more text — a resume or profile paragraph"}), 400
+
+    import anthropic
+
+    try:
+        profile = copilot.extract_profile(text)
+        skills = canonical_set(profile.get("skills") or [])
+        if not skills:
+            return jsonify({"ok": False, "error": "Couldn't find any technical skills in that text"}), 400
+        student = {"Technical skills": ", ".join(skills), "CGPA": profile.get("cgpa")}
+        picks = recommend(get_bundle(), student, top_k=3)
+        recommendations = [
+            {
+                "company": p["company"],
+                "confidence": round(p["score"] * 100, 1),
+                "matched_skills": p["matched_skills"],
+                "related_skills": p["related_skills"],
+                "gap_skills": p["gap_skills"],
+                "avg_rating": p["meta"]["avg_rating"],
+                "location": p["meta"]["top_location"],
+            }
+            for p in picks
+        ]
+        rationale = copilot.write_rationale(skills, profile.get("cgpa"), recommendations)
+    except anthropic.RateLimitError:
+        return jsonify({"ok": False, "error": "The AI service is rate-limited right now — try again shortly"}), 503
+    except anthropic.APIConnectionError:
+        return jsonify({"ok": False, "error": "Couldn't reach the AI service — try again"}), 503
+    except anthropic.APIStatusError as exc:
+        return jsonify({"ok": False, "error": f"AI service error ({exc.status_code})"}), 502
+
+    return jsonify(
+        {
+            "ok": True,
+            "profile": {"name": profile.get("name"), "skills": skills, "cgpa": profile.get("cgpa")},
+            "recommendations": recommendations,
+            "rationale": rationale,
         }
     )
 

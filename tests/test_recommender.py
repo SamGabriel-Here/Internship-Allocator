@@ -64,3 +64,13 @@ def test_gap_skills_are_reported(bundle):
 def test_loo_accuracy_is_reported(bundle):
     m = bundle["metrics"]
     assert 0.0 <= m["top1_accuracy"] <= m["top3_accuracy"] <= 1.0
+
+
+def test_extract_skills_from_text():
+    from skills import extract_skills_from_text
+
+    jd = "Looking for interns with React.js, strong ML fundamentals, and C++ basics."
+    found = extract_skills_from_text(jd)
+    assert {"react", "machine learning", "c++"} <= set(found)
+    # substrings must not false-positive: "ml" inside "html" etc.
+    assert "javascript" not in extract_skills_from_text("We use html only")

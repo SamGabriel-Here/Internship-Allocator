@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Nextern — About</title>
+  <link rel="stylesheet" href="main.css"/>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">Next<span>ern</span></div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="insights.html">Insights</a>
+      <a href="history.html">History</a>
+      <a href="about.html">About</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="hero">
+      <h1>About Nextern</h1>
+      <p>An explainable internship recommender: skill-ontology matching, skill-gap coaching,
+         free-text job-description scoring, and an optional Claude-powered resume copilot.</p>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="card">
+      <h2 class="section-title">Model card</h2>
+      <div class="spacer"></div>
+      <table>
+        <tbody>
+          <tr><th>Approach</th><td>Content-based recommendation via a curated skill ontology — alias resolution (JS → JavaScript), skill families for partial credit (React ↔ Vue), coverage scoring per company, plus a small CGPA-proximity nudge (15%).</td></tr>
+          <tr><th>Training data</th><td>51 synthetic student–company placements across 11 companies. Small and synthetic by design — this is a portfolio demonstration, not a production system.</td></tr>
+          <tr><th>Evaluation</th><td>Leave-one-out: each student is removed from the company requirement profiles before being scored. ~82% top-1, ~100% top-3. Treat as a sanity signal, not a benchmark.</td></tr>
+          <tr><th>Explainability</th><td>Every recommendation returns matched / related / gap skill buckets — nothing is a black box.</td></tr>
+          <tr><th>AI copilot</th><td>Optional. Uses the Anthropic API (Claude) to extract a profile from resume text and write a coaching narrative. Only active if the server is configured with an API key; resume text is sent to Anthropic's API when used.</td></tr>
+          <tr><th>Known limitations</th><td>Tiny synthetic dataset; ontology covers common tech skills only; CGPA signal is heuristic; recommendations should never be the sole basis for career decisions.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="card">
+      <h2 class="section-title">API reference</h2>
+      <p class="muted">All endpoints return JSON with an <code>ok</code> flag. Prediction endpoints are rate-limited per IP.</p>
+      <div class="spacer"></div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Endpoint</th><th>Method</th><th>Body</th><th>Returns</th></tr></thead>
+        <tbody>
+          <tr><td><code>/api/predict</code></td><td>POST</td><td><code>{"Technical skills", "CGPA"}</code></td><td>Top-3 companies with confidence, matched / related / gap skills</td></tr>
+          <tr><td><code>/api/match_jd</code></td><td>POST</td><td><code>{"Technical skills", "jd_text"}</code></td><td>Coverage % against the pasted job description, with the skill breakdown</td></tr>
+          <tr><td><code>/api/copilot</code></td><td>POST</td><td><code>{"text"}</code></td><td>Extracted profile, ranked matches, and an AI coaching narrative (503 if not configured)</td></tr>
+          <tr><td><code>/api/insights</code></td><td>GET</td><td>—</td><td>Dataset stats, per-company profiles, evaluation metrics</td></tr>
+          <tr><td><code>/api/config</code></td><td>GET</td><td>—</td><td>Feature flags (e.g. whether the copilot is enabled)</td></tr>
+          <tr><td><code>/health</code></td><td>GET</td><td>—</td><td>Liveness check</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="spacer"></div>
+      <div class="sub">Example</div>
+      <pre style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;overflow-x:auto"><code>curl -X POST https://getnextern.onrender.com/api/predict \
+  -H "Content-Type: application/json" \
+  -d '{"Technical skills": "python, machine learning", "CGPA": 8.5}'</code></pre>
+    </div>
+
+    <div class="spacer"></div>
+    <p class="muted">Source: <a href="https://github.com/SamGabriel-Here/Internship-Allocator">github.com/SamGabriel-Here/Internship-Allocator</a></p>
+  </div>
+</body>
+</html>

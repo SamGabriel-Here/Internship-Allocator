@@ -13,6 +13,7 @@
       <a href="/">Home</a>
       <a href="insights.html">Insights</a>
       <a href="history.html">History</a>
+      <a href="about.html">About</a>
     </div>
   </nav>
 
@@ -21,6 +22,8 @@
       <h1>Top matches</h1>
       <p id="subtitle" class="muted"></p>
     </div>
+
+    <div id="rationale"></div>
 
     <div class="spacer"></div>
     <div id="results" class="grid grid-3"></div>
@@ -44,6 +47,15 @@
       const who = res.student && res.student['Student name'];
       document.getElementById('subtitle').textContent =
         (who ? who + ' · ' : '') + (res.student ? res.student['Technical skills'] : '');
+
+      // AI copilot runs include a coaching narrative
+      if (res.rationale) {
+        document.getElementById('rationale').innerHTML =
+          '<div class="spacer"></div><div class="card"><div class="rank" style="margin-bottom:8px">AI coach ' +
+          '<span class="badge">Claude</span></div>' +
+          res.rationale.split('\n').filter(p => p.trim()).map(p => `<p class="muted" style="margin:8px 0">${p}</p>`).join('') +
+          '</div>';
+      }
 
       const ranks = ['Best fit', '2nd', '3rd'];
       const block = (label, chipsHtml) => chipsHtml

@@ -13,20 +13,30 @@
       <a href="/">Home</a>
       <a href="insights.html">Insights</a>
       <a href="history.html">History</a>
+      <a href="about.html">About</a>
     </div>
   </nav>
 
   <div class="wrap">
     <div class="hero">
       <h1>Match students to internships by skill</h1>
-      <p>Enter a student's skills and CGPA. The model scores every company by how well its
-         required skills overlap with the student's, and returns the three strongest fits.</p>
+      <p>Enter skills directly, paste a job description to check your fit, or let the
+         AI copilot read your resume and coach you.</p>
     </div>
 
     <div class="spacer"></div>
 
     <div class="card">
-      <form id="form">
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-mode="skills">By skills</button>
+        <button class="tab" data-mode="jd">Job description</button>
+        <button class="tab" data-mode="copilot">AI copilot <span class="badge">Claude</span></button>
+      </div>
+
+      <div class="spacer"></div>
+
+      <!-- Mode: skills -->
+      <form id="form-skills" class="mode">
         <div class="grid grid-2">
           <div>
             <label for="name">Student name <span class="muted">(optional)</span></label>
@@ -37,58 +47,129 @@
             <input id="cgpa" type="number" step="0.1" min="0" max="10" value="8.0"/>
           </div>
         </div>
-
         <div class="spacer"></div>
-
         <label for="skills">Technical skills</label>
         <input id="skills" placeholder="e.g. Python, ML, Data Analysis" autofocus/>
         <div class="hint">Comma-separated. Skills drive the recommendation; CGPA fine-tunes the ranking.</div>
-
         <div class="spacer"></div>
         <div class="row">
           <button class="btn btn-primary" type="submit">Recommend companies</button>
           <a class="btn btn-ghost" href="insights.html">View insights</a>
         </div>
       </form>
+
+      <!-- Mode: job description -->
+      <form id="form-jd" class="mode" hidden>
+        <label for="jd-skills">Your skills</label>
+        <input id="jd-skills" placeholder="e.g. React, Node.js, SQL"/>
+        <div class="spacer"></div>
+        <label for="jd-text">Job description</label>
+        <textarea id="jd-text" rows="7" placeholder="Paste the internship or job posting here…"></textarea>
+        <div class="hint">We extract the required skills from the posting and score your coverage — works for any role, not just the seeded companies.</div>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" type="submit">Check my fit</button>
+      </form>
+
+      <!-- Mode: copilot -->
+      <form id="form-copilot" class="mode" hidden>
+        <label for="resume-text">Resume or profile text</label>
+        <textarea id="resume-text" rows="9" placeholder="Paste your resume text or a paragraph about your experience…"></textarea>
+        <div class="hint" id="copilot-hint">Claude extracts your skills and CGPA, ranks your matches, and writes a personalised skill-gap plan.</div>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" type="submit" id="copilot-btn">Analyse with AI</button>
+      </form>
+
       <div id="msg"></div>
+      <div id="jd-result"></div>
     </div>
   </div>
 
   <script>
-    const form = document.getElementById('form');
-    const msg = document.getElementById('msg');
+    const $ = (id) => document.getElementById(id);
+    const msg = $('msg');
+    const jdResult = $('jd-result');
 
-    form.addEventListener('submit', async (e) => {
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.mode').forEach(m => m.hidden = true);
+        $('form-' + tab.dataset.mode).hidden = false;
+        msg.innerHTML = ''; jdResult.innerHTML = '';
+      });
+    });
+
+    // Disable copilot tab if the server has no API key
+    fetch('/api/config').then(r => r.json()).then(cfg => {
+      if (!cfg.copilot_enabled) {
+        $('copilot-btn').disabled = true;
+        $('copilot-hint').innerHTML = 'AI copilot is not enabled on this deployment (no API key configured). The other two modes work fully.';
+      }
+    }).catch(() => {});
+
+    const busy = (text) => { msg.innerHTML = '<div class="spacer"></div><div class="muted"><span class="spinner"></span> ' + text + '</div>'; };
+    const fail = (err) => { msg.innerHTML = '<div class="spacer"></div><div class="alert alert-err">' + (err.message || err) + '</div>'; };
+
+    async function post(url, payload) {
+      const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const json = await resp.json();
+      if (!json.ok) throw new Error(json.error || 'Request failed');
+      return json;
+    }
+
+    function saveAndGo(json, student) {
+      json.student = student;
+      json.ts = new Date().toLocaleString();
+      sessionStorage.setItem('lastPrediction', JSON.stringify(json));
+      const hist = JSON.parse(localStorage.getItem('pred_history') || '[]');
+      hist.push({ ts: json.ts, student, recommendations: json.recommendations });
+      localStorage.setItem('pred_history', JSON.stringify(hist.slice(-100)));
+      window.location.href = 'results.html';
+    }
+
+    // Mode 1: skills
+    $('form-skills').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const skills = document.getElementById('skills').value.trim();
-      if (!skills) {
-        msg.innerHTML = '<div class="spacer"></div><div class="alert alert-warn">Please enter at least one skill.</div>';
-        return;
-      }
-      const payload = {
-        "Student name": document.getElementById('name').value.trim(),
-        "CGPA": Number(document.getElementById('cgpa').value),
-        "Technical skills": skills
-      };
-      msg.innerHTML = '<div class="spacer"></div><div class="muted"><span class="spinner"></span> Scoring companies…</div>';
+      const skills = $('skills').value.trim();
+      if (!skills) return fail('Please enter at least one skill.');
+      busy('Scoring companies…');
       try {
-        const resp = await fetch('/api/predict', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const json = await resp.json();
-        if (!json.ok) throw new Error(json.error || 'Request failed');
-        json.student = payload;
-        json.ts = new Date().toLocaleString();
-        sessionStorage.setItem('lastPrediction', JSON.stringify(json));
-        const hist = JSON.parse(localStorage.getItem('pred_history') || '[]');
-        hist.push({ ts: json.ts, student: payload, recommendations: json.recommendations });
-        localStorage.setItem('pred_history', JSON.stringify(hist.slice(-100)));
-        window.location.href = 'results.html';
-      } catch (err) {
-        msg.innerHTML = '<div class="spacer"></div><div class="alert alert-err">' + (err.message || err) + '</div>';
-      }
+        const payload = { "Student name": $('name').value.trim(), "CGPA": Number($('cgpa').value), "Technical skills": skills };
+        saveAndGo(await post('/api/predict', payload), payload);
+      } catch (err) { fail(err); }
+    });
+
+    // Mode 2: job description
+    $('form-jd').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      busy('Reading the job description…');
+      try {
+        const json = await post('/api/match_jd', { "Technical skills": $('jd-skills').value, jd_text: $('jd-text').value });
+        msg.innerHTML = '';
+        const chips = (arr, cls) => arr.length ? arr.map(s => `<span class="chip ${cls}">${typeof s === 'string' ? s : s.skill + ' ↔ ' + s.via}</span>`).join('') : '<span class="chip muted">none</span>';
+        jdResult.innerHTML = `
+          <div class="spacer"></div>
+          <div class="rec">
+            <div class="rank">Your fit for this role</div>
+            <div class="pct">${json.coverage}%</div>
+            <div class="meter"><i style="width:${Math.max(4, json.coverage)}%"></i></div>
+            <div><div class="sub" style="margin-bottom:6px">The role asks for</div><div class="chips">${chips(json.jd_skills, 'muted')}</div></div>
+            <div><div class="sub" style="margin-bottom:6px">You match</div><div class="chips">${chips(json.matched_skills, '')}</div></div>
+            <div><div class="sub" style="margin-bottom:6px">Related skills</div><div class="chips">${chips(json.related_skills, 'related')}</div></div>
+            <div><div class="sub" style="margin-bottom:6px">Skills to learn</div><div class="chips">${chips(json.gap_skills, 'gap')}</div></div>
+          </div>`;
+      } catch (err) { fail(err); }
+    });
+
+    // Mode 3: AI copilot
+    $('form-copilot').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      busy('Claude is reading your resume…');
+      try {
+        const json = await post('/api/copilot', { text: $('resume-text').value });
+        const student = { "Student name": json.profile.name || '', "CGPA": json.profile.cgpa, "Technical skills": json.profile.skills.join(', ') };
+        saveAndGo(json, student);
+      } catch (err) { fail(err); }
     });
   </script>
 </body>

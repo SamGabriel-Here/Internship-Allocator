@@ -90,3 +90,25 @@ def best_match(required: str, student_skills: list[str]) -> tuple[float, str | N
         if r > best_score:
             best_score, best_skill = r, s
     return best_score, best_skill
+
+
+def vocabulary(extra=()) -> set[str]:
+    """Every skill name the ontology knows about, plus any extra terms supplied."""
+    vocab = set(ALIASES) | set(ALIASES.values())
+    for group in SKILL_GROUPS:
+        vocab |= group
+    vocab |= {canonical(s) for s in extra}
+    return vocab
+
+def extract_skills_from_text(text: str, extra_vocabulary=()) -> list[str]:
+    """Scan free text (a job description, a resume) for known skills.
+
+    Longer terms are matched first so "machine learning" wins over "machine", and
+    matches are canonicalised, so "React.js" in a JD comes back as "react".
+    """
+    found = []
+    lowered = " " + re.sub(r"\s+", " ", str(text).lower()) + " "
+    for term in sorted(vocabulary(extra_vocabulary), key=len, reverse=True):
+        if re.search(rf"(?<![a-z0-9+#]){re.escape(term)}(?![a-z0-9+#])", lowered):
+            found.append(term)
+    return canonical_set(found)

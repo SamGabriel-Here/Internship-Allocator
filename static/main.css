@@ -63,8 +63,22 @@ a:hover { text-decoration: underline; }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 760px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
 
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.tab {
+  padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); font-weight: 600; font-size: 0.88rem;
+  cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { background: rgba(124, 139, 255, 0.14); border-color: var(--accent); color: var(--text); }
+.badge {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 999px; margin-left: 4px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #0f1226;
+}
+
 label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
-input, select {
+input, select, textarea {
   width: 100%;
   padding: 11px 13px;
   background: var(--bg);
@@ -75,7 +89,8 @@ input, select {
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 139, 255, 0.2); }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 139, 255, 0.2); }
+textarea { resize: vertical; font-family: inherit; line-height: 1.5; }
 .hint { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
 
 .btn {
@@ -95,7 +110,7 @@ input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
   display: flex; flex-direction: column; gap: 12px;
   background: var(--card-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px;
 }
-.rec .rank { font-size: 0.75rem; color: var(--muted); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.rank { font-size: 0.75rem; color: var(--muted); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 .rec .name { font-size: 1.25rem; font-weight: 700; }
 .rec .sub { font-size: 0.82rem; color: var(--muted); }
 .meter { height: 8px; background: var(--bg); border-radius: 999px; overflow: hidden; }

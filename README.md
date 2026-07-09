@@ -5,6 +5,16 @@ described by the skills it has historically required; a student is scored by how
 they cover those skills, so every recommendation is explainable — it comes with the
 skills that matched, the ones that partially matched, and the gaps left to close.
 
+Three ways in:
+
+- **By skills** — type your skills, get ranked companies with a skill-gap breakdown.
+- **Job description** — paste any posting; the ontology extracts its requirements and
+  scores your coverage (works for roles outside the seeded companies, no LLM needed).
+- **AI copilot** *(optional)* — paste your resume; Claude extracts your profile, the
+  recommender ranks it, and Claude writes a personalised coaching narrative. Enabled by
+  setting `ANTHROPIC_API_KEY` (model configurable via `COPILOT_MODEL`, default
+  `claude-opus-4-8`); without a key the app runs fully with the first two modes.
+
 ## How it works
 
 1. **Skill ontology.** Every skill is normalised through an alias map (`JS` → JavaScript,
@@ -95,8 +105,16 @@ Set `PORT` to change the port and `FLASK_DEBUG=1` to enable the reloader.
 }
 ```
 
+`POST /api/match_jd` — `{"Technical skills", "jd_text"}` → coverage % against a pasted
+job description with the matched/related/gap breakdown.
+`POST /api/copilot` — `{"text"}` → extracted profile, ranked matches, and an AI coaching
+narrative (503 when no API key is configured).
+`GET /api/config` — feature flags (whether the copilot is enabled).
 `GET /api/insights` — live dataset/model figures (metrics, per-company stats, top skills).
 `GET /health` — liveness check.
+
+Prediction endpoints are rate-limited per IP (30/min; copilot 10/min). A model card and
+full API reference live at `/about.html`.
 
 ## Pages
 

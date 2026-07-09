@@ -41,3 +41,34 @@ def test_insights_endpoint(client):
     assert body["ok"] is True
     assert body["companies"] and body["top_skills"]
     assert "top3_accuracy" in body["metrics"]
+
+
+def test_config_reports_copilot_flag(client):
+    body = client.get("/api/config").get_json()
+    assert body["ok"] is True
+    assert isinstance(body["copilot_enabled"], bool)
+
+
+def test_match_jd_scores_coverage(client):
+    jd = (
+        "We are hiring a frontend intern. Requirements: strong React and JavaScript, "
+        "experience with Node.js, and familiarity with SQL databases."
+    )
+    resp = client.post("/api/match_jd", json={"Technical skills": "react, js", "jd_text": jd})
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["ok"] is True
+    assert {"react", "javascript"} <= set(body["jd_skills"])
+    assert "react" in body["matched_skills"]
+    assert 0 < body["coverage"] <= 100
+
+
+def test_match_jd_requires_inputs(client):
+    resp = client.post("/api/match_jd", json={"jd_text": "React developer needed"})
+    assert resp.status_code == 400
+
+
+def test_copilot_disabled_without_key(client, monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    resp = client.post("/api/copilot", json={"text": "x" * 100})
+    assert resp.status_code == 503
