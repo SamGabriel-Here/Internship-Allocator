@@ -105,6 +105,8 @@ input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; background: rgba(56, 214, 200, 0.12); color: var(--accent-2); border: 1px solid rgba(56, 214, 200, 0.3); }
 .chip.muted { background: rgba(154, 160, 199, 0.1); color: var(--muted); border-color: var(--border); }
+.chip.related { background: rgba(124, 139, 255, 0.12); color: var(--accent); border-color: rgba(124, 139, 255, 0.32); }
+.chip.gap { background: rgba(250, 204, 21, 0.1); color: #fde68a; border-color: rgba(250, 204, 21, 0.32); }
 
 .stat { text-align: center; }
 .stat .big { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }

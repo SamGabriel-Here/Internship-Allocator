@@ -5,7 +5,8 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from recommender import build_bundle, recommend, skill_tokens
+from recommender import build_bundle, recommend, split_skills
+from skills import canonical, canonical_set, relatedness
 from train import load_dataset
 
 
@@ -14,10 +15,24 @@ def bundle():
     return build_bundle(load_dataset())
 
 
-def test_skill_tokens_splits_and_normalises():
-    assert skill_tokens("Python, ML, Data Analysis") == ["python", "ml", "data analysis"]
-    assert skill_tokens("") == []
-    assert skill_tokens(None) == []
+def test_split_skills():
+    assert split_skills("Python, ML, Data Analysis") == ["python", "ml", "data analysis"]
+    assert split_skills("") == []
+    assert split_skills(None) == []
+
+
+def test_canonical_resolves_aliases():
+    assert canonical("JS") == "javascript"
+    assert canonical("ML") == "machine learning"
+    assert canonical("React.js") == "react"
+    assert canonical_set(["JS", "javascript", "ML"]) == ["javascript", "machine learning"]
+
+
+def test_relatedness_families():
+    assert relatedness("react", "react") == 1.0
+    assert relatedness("react", "vue") == pytest.approx(0.5)  # same frontend family
+    assert relatedness("tensorflow", "pytorch") == pytest.approx(0.5)  # same ml family
+    assert relatedness("react", "python") == 0.0
 
 
 def test_bundle_covers_every_company(bundle):
@@ -30,13 +45,20 @@ def test_recommend_returns_three_ranked_companies(bundle):
     scores = [p["score"] for p in picks]
     assert scores == sorted(scores, reverse=True)
     assert all(0.0 <= p["score"] <= 1.0 for p in picks)
+    assert {"matched_skills", "related_skills", "gap_skills"} <= picks[0].keys()
 
 
-def test_matched_skills_are_real_overlaps(bundle):
-    picks = recommend(bundle, {"Technical skills": "React, Node.js", "CGPA": 8.0})
+def test_matching_is_alias_aware(bundle):
+    # A user who types the full names should still match companies that stored abbreviations.
+    picks = recommend(bundle, {"Technical skills": "JavaScript, Node.js", "CGPA": 8.0})
     top = picks[0]
-    assert top["matched_skills"], "expected at least one matched skill for a clear profile"
+    assert top["matched_skills"], "expected at least one matched required skill"
     assert set(top["matched_skills"]).issubset(set(bundle["company_skills"][top["company"]]))
+
+
+def test_gap_skills_are_reported(bundle):
+    picks = recommend(bundle, {"Technical skills": "Excel", "CGPA": 7.0})
+    assert any(p["gap_skills"] for p in picks), "expected some company to have unmet skills"
 
 
 def test_loo_accuracy_is_reported(bundle):

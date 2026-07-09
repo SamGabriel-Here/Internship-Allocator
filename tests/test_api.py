@@ -26,7 +26,8 @@ def test_predict_returns_recommendations(client):
     body = resp.get_json()
     assert body["ok"] is True
     assert len(body["recommendations"]) == 3
-    assert "confidence" in body["recommendations"][0]
+    rec = body["recommendations"][0]
+    assert {"confidence", "matched_skills", "related_skills", "gap_skills"} <= rec.keys()
 
 
 def test_predict_rejects_empty_skills(client):

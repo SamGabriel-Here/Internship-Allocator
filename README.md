@@ -1,37 +1,47 @@
 # Nextern — Internship Recommender
 
 A content-based recommender that matches students to internships. Every company is
-described by the skills it has historically required; a student is scored against each
-company by how much their skill sets overlap, so every recommendation is explainable —
-it comes with the exact skills that matched.
+described by the skills it has historically required; a student is scored by how well
+they cover those skills, so every recommendation is explainable — it comes with the
+skills that matched, the ones that partially matched, and the gaps left to close.
 
 ## How it works
 
-1. **Company profiles.** For each company, all skills it has required (and that its past
-   interns had) are pooled into one profile and vectorised with TF-IDF over
-   comma-delimited skills, so multi-word skills like `data science` stay intact.
-2. **Scoring.** A student's skills are vectorised in the same space. The match score is
-   the cosine similarity between the student and each company, nudged slightly (15%) by
-   how close the student's CGPA is to that company's past interns.
-3. **Explanation.** Alongside the score, the API returns the skills that actually
-   overlapped, the company's typical location, and its average intern rating.
+1. **Skill ontology.** Every skill is normalised through an alias map (`JS` → JavaScript,
+   `ML` → machine learning, `React.js` → React) and grouped into families (`skills.py`).
+   This makes matching robust to how a user actually phrases things and lets related
+   skills count partially — a React/Node profile gets partial credit toward a company
+   that wants Vue.
+2. **Coverage scoring.** For each company, every required skill is matched to the
+   student's closest skill: an exact/alias match counts fully, a same-family skill counts
+   partially. The company's score is the average coverage, nudged slightly (15%) by how
+   close the student's CGPA is to that company's past interns.
+3. **Explanation & gaps.** Each recommendation returns three buckets — **matched**,
+   **related** (with the family link, e.g. `power bi ↔ excel`), and **skills to learn**
+   (required skills the student is missing) — turning the result into actionable coaching.
 
-The trained artifacts (vectorizer, company matrix, per-company metadata, evaluation
-metrics) are bundled together with `joblib`.
+The artifacts (per-company requirement sets, metadata, evaluation metrics) are bundled
+with `joblib`.
+
+> **Why not embeddings?** Static word embeddings were tried and rejected: on short tech
+> jargon they scored `react`↔`vue` ≈ 0.05 and `ML`↔`machine learning` ≈ 0.29 — worse than
+> the ontology. A real transformer model would work but won't fit the 512 MB free tier.
+> True semantic understanding is planned via an LLM-powered path instead.
 
 ### On accuracy
 
 The dataset is small and synthetic — 51 students across 11 companies. A genuine
-leave-one-out evaluation (each student removed from the company profiles before scoring
-them) gives **~86% top-1** and **~96% top-3** accuracy. Treat these as a sanity signal
-that skill overlap is a sensible ranking, not a production benchmark.
+leave-one-out evaluation (each student removed from the company requirements before
+scoring them) gives **~82% top-1** and **~100% top-3** accuracy. Treat these as a sanity
+signal that skill coverage is a sensible ranking, not a production benchmark.
 
 ## Project structure
 
 ```
 .
 ├── app.py             # Flask server: static UI + JSON API
-├── recommender.py     # Scoring engine (vectorise, rank, explain, evaluate)
+├── recommender.py     # Scoring engine (coverage, rank, explain, evaluate)
+├── skills.py          # Skill ontology: alias resolution + related-skill families
 ├── train.py           # Builds and saves the model bundle from the dataset
 ├── internship_data.csv
 ├── static/            # index / results / insights / history pages
@@ -72,8 +82,15 @@ Set `PORT` to change the port and `FLASK_DEBUG=1` to enable the reloader.
 {
   "ok": true,
   "recommendations": [
-    { "company": "Google", "confidence": 63.0, "matched_skills": ["python", "ml"],
-      "avg_rating": 4.0, "location": "Bangalore" }
+    {
+      "company": "Google",
+      "confidence": 82.9,
+      "matched_skills": ["machine learning", "python"],
+      "related_skills": [{ "skill": "natural language processing", "via": "machine learning" }],
+      "gap_skills": ["artificial intelligence"],
+      "avg_rating": 4.0,
+      "location": "Bangalore"
+    }
   ]
 }
 ```

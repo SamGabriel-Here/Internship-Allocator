@@ -46,23 +46,27 @@
         (who ? who + ' · ' : '') + (res.student ? res.student['Technical skills'] : '');
 
       const ranks = ['Best fit', '2nd', '3rd'];
-      el.innerHTML = recs.map((r, i) => `
+      const block = (label, chipsHtml) => chipsHtml
+        ? `<div><div class="sub" style="margin-bottom:6px">${label}</div><div class="chips">${chipsHtml}</div></div>`
+        : '';
+
+      el.innerHTML = recs.map((r, i) => {
+        const matched = (r.matched_skills || []).map(s => `<span class="chip">${s}</span>`).join('');
+        const related = (r.related_skills || []).map(x =>
+          `<span class="chip related" title="counts partially — same family as ${x.via}">${x.skill} ↔ ${x.via}</span>`).join('');
+        const gaps = (r.gap_skills || []).map(s => `<span class="chip gap">${s}</span>`).join('');
+        return `
         <div class="rec">
           <div class="rank">${ranks[i] || (i + 1) + 'th'}</div>
           <div class="name">${r.company}</div>
           <div class="pct">${r.confidence}%</div>
           <div class="meter"><i style="width:${Math.max(4, r.confidence)}%"></i></div>
           <div class="sub">${r.location} · avg intern rating ${r.avg_rating}/4</div>
-          <div>
-            <div class="sub" style="margin-bottom:6px">Matched skills</div>
-            <div class="chips">${
-              r.matched_skills.length
-                ? r.matched_skills.map(s => `<span class="chip">${s}</span>`).join('')
-                : '<span class="chip muted">none directly matched</span>'
-            }</div>
-          </div>
-        </div>
-      `).join('');
+          ${block('Matched skills', matched || '<span class="chip muted">none directly matched</span>')}
+          ${block('Related skills', related)}
+          ${block('Skills to learn', gaps)}
+        </div>`;
+      }).join('');
     }
   </script>
 </body>

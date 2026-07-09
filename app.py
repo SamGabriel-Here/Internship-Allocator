@@ -61,6 +61,8 @@ def api_predict():
                     "company": p["company"],
                     "confidence": round(p["score"] * 100, 1),
                     "matched_skills": p["matched_skills"],
+                    "related_skills": p["related_skills"],
+                    "gap_skills": p["gap_skills"],
                     "avg_rating": p["meta"]["avg_rating"],
                     "location": p["meta"]["top_location"],
                 }
