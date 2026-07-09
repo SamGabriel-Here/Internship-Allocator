@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: nextern
+    name: getnextern
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
