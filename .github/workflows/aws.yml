@@ -26,9 +26,11 @@
 
 name: Deploy to Amazon ECS
 
+# Manual-only: this is an optional deployment template. Fill in the env values and
+# AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY secrets below, then trigger it from the
+# Actions tab. It stays off automatic pushes so CI is never red on an unconfigured repo.
 on:
-  push:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 env:
   AWS_REGION: MY_AWS_REGION                   # set this to your preferred AWS region, e.g. us-west-1

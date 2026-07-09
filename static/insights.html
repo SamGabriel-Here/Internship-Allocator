@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>InternMatch — Insights</title>
+  <link rel="stylesheet" href="main.css"/>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">Intern<span>Match</span></div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="insights.html">Insights</a>
+      <a href="history.html">History</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="hero">
+      <h1>Dataset & model insights</h1>
+      <p>Live figures pulled from the trained model. Accuracy is a leave-one-out check on a
+         small synthetic dataset — a sanity signal, not a production benchmark.</p>
+    </div>
+
+    <div class="spacer"></div>
+    <div id="metrics" class="grid grid-3"></div>
+
+    <div class="spacer"></div>
+    <div class="card">
+      <h2 class="section-title">Most common student skills</h2>
+      <div id="skills"></div>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="card">
+      <h2 class="section-title">Companies in the dataset</h2>
+      <div style="overflow-x:auto">
+        <table id="companies">
+          <thead><tr><th>Company</th><th>Interns</th><th>Avg CGPA</th><th>Avg rating</th><th>Location</th><th>Top skills</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (async () => {
+      const res = await fetch('/api/insights').then(r => r.json());
+      if (!res.ok) return;
+      const m = res.metrics;
+
+      document.getElementById('metrics').innerHTML = [
+        ['big', m.top1_accuracy != null ? (m.top1_accuracy * 100).toFixed(0) + '%' : '—', 'Top-1 accuracy (LOO)'],
+        ['big', m.top3_accuracy != null ? (m.top3_accuracy * 100).toFixed(0) + '%' : '—', 'Top-3 accuracy (LOO)'],
+        ['big', m.n_samples + ' / ' + m.n_companies, 'Students / companies']
+      ].map(([, val, lbl]) => `<div class="card stat"><div class="big">${val}</div><div class="lbl">${lbl}</div></div>`).join('');
+
+      const max = Math.max(...res.top_skills.map(s => s.count), 1);
+      document.getElementById('skills').innerHTML = res.top_skills.map(s => `
+        <div class="bar-row">
+          <div>${s.skill}</div>
+          <div class="bar"><i style="width:${(s.count / max) * 100}%"></i></div>
+          <div class="muted">${s.count}</div>
+        </div>`).join('');
+
+      document.querySelector('#companies tbody').innerHTML = res.companies.map(c => `
+        <tr>
+          <td><strong>${c.name}</strong></td>
+          <td>${c.interns}</td>
+          <td>${c.avg_cgpa}</td>
+          <td>${c.avg_rating}</td>
+          <td>${c.location}</td>
+          <td class="muted">${c.top_skills.join(', ')}</td>
+        </tr>`).join('');
+    })();
+  </script>
+</body>
+</html>

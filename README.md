@@ -1,82 +1,109 @@
-# AI-Based Internship Portal
+# InternMatch — Internship Recommender
 
-A machine learning powered portal that recommends companies to students for internships based on their profile (age, gender, location, CGPA, technical skills, work experience, etc.).
+A content-based recommender that matches students to internships. Every company is
+described by the skills it has historically required; a student is scored against each
+company by how much their skill sets overlap, so every recommendation is explainable —
+it comes with the exact skills that matched.
 
 ## How it works
 
-A `RandomForestClassifier` is trained on historical internship placement data (`internship data.csv` / `internship data.xlsx`). Categorical fields are label-encoded and technical skills are vectorized with a `CountVectorizer`. The trained model, encoders, and vectorizer are bundled together with `joblib` (`internship_company_recommender.joblib`) and served behind a Flask API that returns the top-3 recommended companies with match probabilities.
+1. **Company profiles.** For each company, all skills it has required (and that its past
+   interns had) are pooled into one profile and vectorised with TF-IDF over
+   comma-delimited skills, so multi-word skills like `data science` stay intact.
+2. **Scoring.** A student's skills are vectorised in the same space. The match score is
+   the cosine similarity between the student and each company, nudged slightly (15%) by
+   how close the student's CGPA is to that company's past interns.
+3. **Explanation.** Alongside the score, the API returns the skills that actually
+   overlapped, the company's typical location, and its average intern rating.
+
+The trained artifacts (vectorizer, company matrix, per-company metadata, evaluation
+metrics) are bundled together with `joblib`.
+
+### On accuracy
+
+The dataset is small and synthetic — 51 students across 11 companies. A genuine
+leave-one-out evaluation (each student removed from the company profiles before scoring
+them) gives **~86% top-1** and **~96% top-3** accuracy. Treat these as a sanity signal
+that skill overlap is a sensible ranking, not a production benchmark.
 
 ## Project structure
 
 ```
 .
-├── app.py                              # Flask API + static site server
-├── interactive_intern_recommender.py   # Model training script
-├── internship data.csv / .xlsx         # Training dataset
-├── internship_company_recommender.joblib  # Trained model bundle
-└── ui2/                                 # Standalone UI variant
-    ├── app.py
-    └── static/                          # index, results, insights, history pages
+├── app.py             # Flask server: static UI + JSON API
+├── recommender.py     # Scoring engine (vectorise, rank, explain, evaluate)
+├── train.py           # Builds and saves the model bundle from the dataset
+├── internship_data.csv
+├── static/            # index / results / insights / history pages
+├── tests/             # pytest suite for the recommender and the API
+├── Dockerfile
+└── .github/workflows/ # ci.yml (tests) + aws.yml (optional ECS deploy)
 ```
 
 ## Setup
 
 ```bash
-pip install flask pandas scikit-learn joblib
+pip install -r requirements.txt
 ```
 
-Train the model (optional — a trained bundle is already included):
+Build the model bundle (the app also builds it automatically on first run if missing):
 
 ```bash
-python interactive_intern_recommender.py
+python train.py
 ```
 
 Run the app:
 
 ```bash
-python app.py
+python app.py            # http://localhost:7860
 ```
 
-The server starts on `http://localhost:7860`.
+Set `PORT` to change the port and `FLASK_DEBUG=1` to enable the reloader.
 
 ## API
 
 `POST /api/predict`
 
-Request body:
-
 ```json
-{
-  "Age": 21,
-  "Gender": "Male",
-  "Location": "Delhi",
-  "CGPA": 8.2,
-  "Technical skills": "python sql machine learning",
-  "Work experience": "6",
-  "Company location": "Bangalore",
-  "Rating by company": 4,
-  "Internship status": "NO"
-}
+{ "Technical skills": "python, ml, data analysis", "CGPA": 8.5 }
 ```
-
-Response:
 
 ```json
 {
   "ok": true,
-  "top3": [["CompanyA", 0.41], ["CompanyB", 0.30], ["CompanyC", 0.15]],
-  "matched": { "CompanyA": ["python", "sql"] },
-  "notes": "Returned top-3 companies (model probabilities)."
+  "recommendations": [
+    { "company": "Google", "confidence": 63.0, "matched_skills": ["python", "ml"],
+      "avg_rating": 4.0, "location": "Bangalore" }
+  ]
 }
 ```
 
+`GET /api/insights` — live dataset/model figures (metrics, per-company stats, top skills).
+`GET /health` — liveness check.
+
 ## Pages
 
-- `/` — home / input form
-- `/results` — recommendation results
-- `/insights` — data insights
-- `/history` — past predictions
+- `/` — enter a student's skills and CGPA
+- `/results.html` — top-3 matches with confidence and matched skills
+- `/insights.html` — dataset and model insights, served from `/api/insights`
+- `/history.html` — past recommendations (stored in the browser)
+
+## Tests
+
+```bash
+pip install pytest && pytest -q
+```
+
+## Docker
+
+```bash
+docker build -t internmatch .
+docker run -p 7860:7860 internmatch
+```
 
 ## Deployment
 
-A GitHub Actions workflow (`.github/workflows/aws.yml`) is included for deploying to Amazon ECS via ECR. Fill in the AWS region, ECR repository, ECS cluster/service, and task definition values, and configure `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` secrets to use it.
+`.github/workflows/aws.yml` is an optional template for deploying the container to
+Amazon ECS via ECR. It is **manual-only** (`workflow_dispatch`): fill in the region,
+repository, cluster/service, and task-definition values and add the
+`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` secrets before running it.

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>InternMatch — History</title>
+  <link rel="stylesheet" href="main.css"/>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">Intern<span>Match</span></div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="insights.html">Insights</a>
+      <a href="history.html">History</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="hero">
+      <h1>Recommendation history</h1>
+      <p class="muted">Stored locally in your browser — nothing leaves this device.</p>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="card">
+      <div id="list"></div>
+      <div class="spacer"></div>
+      <div class="row">
+        <button id="clear" class="btn btn-ghost">Clear history</button>
+        <a class="btn btn-primary" href="/">New recommendation</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function render() {
+      const hist = JSON.parse(localStorage.getItem('pred_history') || '[]').slice().reverse();
+      const list = document.getElementById('list');
+      if (!hist.length) {
+        list.innerHTML = '<p class="muted">No recommendations yet.</p>';
+        return;
+      }
+      list.innerHTML = '<div style="overflow-x:auto"><table><thead><tr>' +
+        '<th>When</th><th>Skills</th><th>Best fit</th><th>Confidence</th></tr></thead><tbody>' +
+        hist.map(h => {
+          const top = (h.recommendations && h.recommendations[0]) || {};
+          return `<tr>
+            <td class="muted">${h.ts || ''}</td>
+            <td>${(h.student && h.student['Technical skills']) || ''}</td>
+            <td><strong>${top.company || 'N/A'}</strong></td>
+            <td>${top.confidence != null ? top.confidence + '%' : '-'}</td>
+          </tr>`;
+        }).join('') + '</tbody></table></div>';
+    }
+    document.getElementById('clear').addEventListener('click', () => {
+      if (confirm('Clear all history?')) { localStorage.removeItem('pred_history'); render(); }
+    });
+    render();
+  </script>
+</body>
+</html>
