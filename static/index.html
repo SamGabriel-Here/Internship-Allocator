@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>InternMatch — Find your fit</title>
+  <link rel="stylesheet" href="main.css"/>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">Intern<span>Match</span></div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="insights.html">Insights</a>
+      <a href="history.html">History</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="hero">
+      <h1>Match students to internships by skill</h1>
+      <p>Enter a student's skills and CGPA. The model scores every company by how well its
+         required skills overlap with the student's, and returns the three strongest fits.</p>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="card">
+      <form id="form">
+        <div class="grid grid-2">
+          <div>
+            <label for="name">Student name <span class="muted">(optional)</span></label>
+            <input id="name" placeholder="e.g. Riya Sharma"/>
+          </div>
+          <div>
+            <label for="cgpa">CGPA</label>
+            <input id="cgpa" type="number" step="0.1" min="0" max="10" value="8.0"/>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <label for="skills">Technical skills</label>
+        <input id="skills" placeholder="e.g. Python, ML, Data Analysis" autofocus/>
+        <div class="hint">Comma-separated. Skills drive the recommendation; CGPA fine-tunes the ranking.</div>
+
+        <div class="spacer"></div>
+        <div class="row">
+          <button class="btn btn-primary" type="submit">Recommend companies</button>
+          <a class="btn btn-ghost" href="insights.html">View insights</a>
+        </div>
+      </form>
+      <div id="msg"></div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('form');
+    const msg = document.getElementById('msg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const skills = document.getElementById('skills').value.trim();
+      if (!skills) {
+        msg.innerHTML = '<div class="spacer"></div><div class="alert alert-warn">Please enter at least one skill.</div>';
+        return;
+      }
+      const payload = {
+        "Student name": document.getElementById('name').value.trim(),
+        "CGPA": Number(document.getElementById('cgpa').value),
+        "Technical skills": skills
+      };
+      msg.innerHTML = '<div class="spacer"></div><div class="muted"><span class="spinner"></span> Scoring companies…</div>';
+      try {
+        const resp = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await resp.json();
+        if (!json.ok) throw new Error(json.error || 'Request failed');
+        json.student = payload;
+        json.ts = new Date().toLocaleString();
+        sessionStorage.setItem('lastPrediction', JSON.stringify(json));
+        const hist = JSON.parse(localStorage.getItem('pred_history') || '[]');
+        hist.push({ ts: json.ts, student: payload, recommendations: json.recommendations });
+        localStorage.setItem('pred_history', JSON.stringify(hist.slice(-100)));
+        window.location.href = 'results.html';
+      } catch (err) {
+        msg.innerHTML = '<div class="spacer"></div><div class="alert alert-err">' + (err.message || err) + '</div>';
+      }
+    });
+  </script>
+</body>
+</html>
