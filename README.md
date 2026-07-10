@@ -61,7 +61,7 @@ signal that skill coverage is a sensible ranking, not a production benchmark.
 ├── static/            # index / results / insights / history pages
 ├── tests/             # pytest suite for the recommender and the API
 ├── Dockerfile
-└── .github/workflows/ # ci.yml (tests) + aws.yml (optional ECS deploy)
+└── .github/workflows/ # ci.yml (runs the tests on every push)
 ```
 
 ## Setup
@@ -142,7 +142,7 @@ docker run -p 7860:7860 nextern
 
 ## Deployment
 
-`.github/workflows/aws.yml` is an optional template for deploying the container to
-Amazon ECS via ECR. It is **manual-only** (`workflow_dispatch`): fill in the region,
-repository, cluster/service, and task-definition values and add the
-`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` secrets before running it.
+Deployed on [Render](https://render.com) as a Docker web service via `render.yaml`
+(a one-click blueprint). Pushing to `main` redeploys automatically. The model bundle is
+built into the image, so the container starts ready to serve. Live at
+[getnextern.onrender.com](https://getnextern.onrender.com).
