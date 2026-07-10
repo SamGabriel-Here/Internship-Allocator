@@ -11,7 +11,7 @@ import os
 import urllib.error
 import urllib.request
 
-DEFAULT_MODELS = {"anthropic": "claude-opus-4-8", "gemini": "gemini-2.5-flash"}
+DEFAULT_MODELS = {"anthropic": "claude-opus-4-8"}  # gemini is discovered at runtime
 
 EXTRACT_SYSTEM = (
     "You extract candidate profiles from resume or profile text for an internship "
@@ -122,6 +122,43 @@ GEMINI_PROFILE_SCHEMA = {
     "required": ["skills"],
 }
 
+_gemini_model = None
+
+
+def _pick_gemini_model() -> str:
+    """Ask the API which models this key can use — model names churn too fast to hardcode."""
+    global _gemini_model
+    if os.environ.get("COPILOT_MODEL"):
+        return os.environ["COPILOT_MODEL"]
+    if _gemini_model:
+        return _gemini_model
+
+    req = urllib.request.Request(
+        "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",
+        headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            models = json.load(resp).get("models", [])
+    except (urllib.error.URLError, json.JSONDecodeError):
+        raise CopilotError("Couldn't reach the AI service — try again", 503)
+
+    names = [
+        m["name"].split("/")[-1]
+        for m in models
+        if "generateContent" in m.get("supportedGenerationMethods", [])
+    ]
+    if not names:
+        raise CopilotError("No usable AI model is available for this API key", 502)
+
+    if "gemini-flash-latest" in names:
+        _gemini_model = "gemini-flash-latest"
+    else:
+        noise = ("preview", "exp", "image", "tts", "live", "audio", "embedding", "lite", "8b")
+        flash = [n for n in names if "flash" in n and not any(x in n for x in noise)]
+        _gemini_model = sorted(flash or names, reverse=True)[0]
+    return _gemini_model
+
 
 def _gemini(system: str, prompt: str, schema=None) -> str:
     body = {
@@ -134,7 +171,7 @@ def _gemini(system: str, prompt: str, schema=None) -> str:
         body["generationConfig"]["responseSchema"] = schema
 
     req = urllib.request.Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{_model()}:generateContent",
+        f"https://generativelanguage.googleapis.com/v1beta/models/{_pick_gemini_model()}:generateContent",
         data=json.dumps(body).encode(),
         headers={
             "Content-Type": "application/json",
