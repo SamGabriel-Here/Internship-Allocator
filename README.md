@@ -1,5 +1,8 @@
 # Nextern — Internship Recommender
 
+**Live demo: [getnextern.onrender.com](https://getnextern.onrender.com)**
+_(free tier — the first request after idle can take ~50s to wake)_
+
 A content-based recommender that matches students to internships. Every company is
 described by the skills it has historically required; a student is scored by how well
 they cover those skills, so every recommendation is explainable — it comes with the
