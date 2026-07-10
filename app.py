@@ -64,7 +64,7 @@ def health():
 
 @app.route("/api/config")
 def api_config():
-    return jsonify({"ok": True, "copilot_enabled": copilot.enabled()})
+    return jsonify({"ok": True, "copilot_enabled": copilot.enabled(), "copilot_provider": copilot.provider()})
 
 
 @app.route("/api/predict", methods=["POST"])
@@ -144,8 +144,6 @@ def api_copilot():
     if len(text) < 40:
         return jsonify({"ok": False, "error": "Paste a bit more text — a resume or profile paragraph"}), 400
 
-    import anthropic
-
     try:
         profile = copilot.extract_profile(text)
         skills = canonical_set(profile.get("skills") or [])
@@ -166,16 +164,13 @@ def api_copilot():
             for p in picks
         ]
         rationale = copilot.write_rationale(skills, profile.get("cgpa"), recommendations)
-    except anthropic.RateLimitError:
-        return jsonify({"ok": False, "error": "The AI service is rate-limited right now — try again shortly"}), 503
-    except anthropic.APIConnectionError:
-        return jsonify({"ok": False, "error": "Couldn't reach the AI service — try again"}), 503
-    except anthropic.APIStatusError as exc:
-        return jsonify({"ok": False, "error": f"AI service error ({exc.status_code})"}), 502
+    except copilot.CopilotError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), exc.status
 
     return jsonify(
         {
             "ok": True,
+            "provider": copilot.provider(),
             "profile": {"name": profile.get("name"), "skills": skills, "cgpa": profile.get("cgpa")},
             "recommendations": recommendations,
             "rationale": rationale,

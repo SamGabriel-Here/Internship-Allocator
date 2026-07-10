@@ -30,7 +30,7 @@
       <div class="tabs" id="tabs">
         <button class="tab active" data-mode="skills">By skills</button>
         <button class="tab" data-mode="jd">Job description</button>
-        <button class="tab" data-mode="copilot">AI copilot <span class="badge">Claude</span></button>
+        <button class="tab" data-mode="copilot">AI copilot <span class="badge" id="copilot-badge">AI</span></button>
       </div>
 
       <div class="spacer"></div>
@@ -99,11 +99,15 @@
       });
     });
 
-    // Disable copilot tab if the server has no API key
+    // Disable copilot tab if the server has no API key; show which provider powers it
     fetch('/api/config').then(r => r.json()).then(cfg => {
       if (!cfg.copilot_enabled) {
         $('copilot-btn').disabled = true;
         $('copilot-hint').innerHTML = 'AI copilot is not enabled on this deployment (no API key configured). The other two modes work fully.';
+      } else if (cfg.copilot_provider) {
+        const label = cfg.copilot_provider === 'anthropic' ? 'Claude' : 'Gemini';
+        $('copilot-badge').textContent = label;
+        $('copilot-hint').textContent = label + ' extracts your skills and CGPA, ranks your matches, and writes a personalised skill-gap plan.';
       }
     }).catch(() => {});
 

@@ -34,7 +34,7 @@
           <tr><th>Training data</th><td>51 synthetic student–company placements across 11 companies. Small and synthetic by design — this is a portfolio demonstration, not a production system.</td></tr>
           <tr><th>Evaluation</th><td>Leave-one-out: each student is removed from the company requirement profiles before being scored. ~82% top-1, ~100% top-3. Treat as a sanity signal, not a benchmark.</td></tr>
           <tr><th>Explainability</th><td>Every recommendation returns matched / related / gap skill buckets — nothing is a black box.</td></tr>
-          <tr><th>AI copilot</th><td>Optional. Uses the Anthropic API (Claude) to extract a profile from resume text and write a coaching narrative. Only active if the server is configured with an API key; resume text is sent to Anthropic's API when used.</td></tr>
+          <tr><th>AI copilot</th><td>Optional. Uses an LLM API (Claude via the Anthropic API, or Gemini via the Google AI API — whichever key the server is configured with) to extract a profile from resume text and write a coaching narrative. Resume text is sent to that provider's API when used; without a key the feature is disabled and nothing leaves the server.</td></tr>
           <tr><th>Known limitations</th><td>Tiny synthetic dataset; ontology covers common tech skills only; CGPA signal is heuristic; recommendations should never be the sole basis for career decisions.</td></tr>
         </tbody>
       </table>

@@ -50,9 +50,10 @@
 
       // AI copilot runs include a coaching narrative
       if (res.rationale) {
+        const providerLabel = res.provider === 'anthropic' ? 'Claude' : res.provider === 'gemini' ? 'Gemini' : 'AI';
         document.getElementById('rationale').innerHTML =
           '<div class="spacer"></div><div class="card"><div class="rank" style="margin-bottom:8px">AI coach ' +
-          '<span class="badge">Claude</span></div>' +
+          '<span class="badge">' + providerLabel + '</span></div>' +
           res.rationale.split('\n').filter(p => p.trim()).map(p => `<p class="muted" style="margin:8px 0">${p}</p>`).join('') +
           '</div>';
       }

@@ -47,6 +47,42 @@ def test_config_reports_copilot_flag(client):
     body = client.get("/api/config").get_json()
     assert body["ok"] is True
     assert isinstance(body["copilot_enabled"], bool)
+    assert "copilot_provider" in body
+
+
+def test_copilot_provider_selection(monkeypatch):
+    import copilot
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    assert copilot.provider() is None
+    monkeypatch.setenv("GEMINI_API_KEY", "test")
+    assert copilot.provider() == "gemini"
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    assert copilot.provider() == "anthropic"
+
+
+def test_copilot_gemini_path(client, monkeypatch):
+    import json as _json
+
+    import copilot
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("GEMINI_API_KEY", "test")
+
+    def fake_gemini(system, prompt, schema=None):
+        if schema:
+            return _json.dumps({"name": "Riya", "skills": ["python", "ml"], "cgpa": 8.6})
+        return "You look like a great fit for Google."
+
+    monkeypatch.setattr(copilot, "_gemini", fake_gemini)
+    resp = client.post("/api/copilot", json={"text": "Riya, CGPA 8.6, knows Python and ML. " * 3})
+    body = resp.get_json()
+    assert resp.status_code == 200 and body["ok"] is True
+    assert body["provider"] == "gemini"
+    assert body["profile"]["skills"] == ["python", "machine learning"]
+    assert len(body["recommendations"]) == 3
+    assert "fit" in body["rationale"]
 
 
 def test_match_jd_scores_coverage(client):
@@ -70,5 +106,6 @@ def test_match_jd_requires_inputs(client):
 
 def test_copilot_disabled_without_key(client, monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     resp = client.post("/api/copilot", json={"text": "x" * 100})
     assert resp.status_code == 503

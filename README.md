@@ -10,10 +10,11 @@ Three ways in:
 - **By skills** — type your skills, get ranked companies with a skill-gap breakdown.
 - **Job description** — paste any posting; the ontology extracts its requirements and
   scores your coverage (works for roles outside the seeded companies, no LLM needed).
-- **AI copilot** *(optional)* — paste your resume; Claude extracts your profile, the
-  recommender ranks it, and Claude writes a personalised coaching narrative. Enabled by
-  setting `ANTHROPIC_API_KEY` (model configurable via `COPILOT_MODEL`, default
-  `claude-opus-4-8`); without a key the app runs fully with the first two modes.
+- **AI copilot** *(optional)* — paste your resume; an LLM extracts your profile, the
+  recommender ranks it, and the LLM writes a personalised coaching narrative. Set
+  `ANTHROPIC_API_KEY` to power it with Claude (`claude-opus-4-8`) or `GEMINI_API_KEY`
+  for Google's free tier (`gemini-2.5-flash`); override the model with `COPILOT_MODEL`.
+  Without a key the app runs fully with the first two modes.
 
 ## How it works
 
