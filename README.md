@@ -1,6 +1,11 @@
 # Nextern — Internship Recommender
 
 **Live demo: [getnextern.onrender.com](https://getnextern.onrender.com)**
+
+![Nextern's skills entry, with tabs for pasting a job description or letting the AI copilot read a resume](docs/screenshot-skills.png)
+
+![Top matches for Python, Machine Learning, SQL and Pandas: IBM at 82.3%, Amazon at 75.1%, Wipro at 70.4%, each showing which skills matched and which are related](docs/screenshot-matches.png)
+
 _(free tier — the first request after idle can take ~50s to wake)_
 
 A content-based recommender that matches students to internships. Every company is
