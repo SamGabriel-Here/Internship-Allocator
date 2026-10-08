@@ -5,3 +5,6 @@ __pycache__/
 .DS_Store
 .pytest_cache/
 internship_company_recommender.joblib
+static/
+web/node_modules/
+web/*.tsbuildinfo
