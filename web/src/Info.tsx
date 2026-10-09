@@ -221,6 +221,8 @@ export function About() {
         </p>
       </div>
       <dl className="card-dl">
+        <dt>The mark</dt>
+        <dd>次 (tsugi) is Japanese for "next": the next skill to learn, the next internship to apply for.</dd>
         <dt>Approach</dt>
         <dd>A curated skill ontology. Aliases resolve (JS → JavaScript), skills in one family give half credit (React ↔ Vue), and each company is scored by how much of its required skill set you cover, plus a small CGPA-proximity nudge (15%).</dd>
         <dt>Fit bands</dt>
