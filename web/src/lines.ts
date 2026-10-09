@@ -35,13 +35,6 @@ export function stations(m: Pick<Match, "matched_skills" | "related_skills" | "g
   ];
 }
 
-/** Where "you are here" sits: after the last station that counts (reached or transfer). */
-export function herePosition(list: Station[]): number {
-  let i = 0;
-  while (i < list.length && list[i].kind !== "ahead") i++;
-  return i;
-}
-
 export const bandLabel = { strong: "Strong fit", partial: "Partial fit", reach: "A reach" } as const;
 
 /** "3 of 5 skills", with related skills (which count half) listed separately. */

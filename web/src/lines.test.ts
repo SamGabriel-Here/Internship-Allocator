@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chainBySharedSkills } from "./Info";
-import { herePosition, label, progressText, stations } from "./lines";
+import { label, progressText, stations } from "./lines";
 
 const google = {
   matched_skills: ["python", "machine learning"],
@@ -8,15 +8,11 @@ const google = {
   gap_skills: ["natural language processing"],
 };
 
-describe("line helpers", () => {
+describe("breakdown helpers", () => {
   it("orders stations reached, then transfers, then ahead", () => {
     expect(stations(google).map((s) => s.kind)).toEqual(["reached", "reached", "transfer", "ahead"]);
   });
 
-  it("puts 'you are here' after the last station that counts", () => {
-    expect(herePosition(stations(google))).toBe(3);
-    expect(herePosition(stations({ matched_skills: [], related_skills: [], gap_skills: ["sql"] }))).toBe(0);
-  });
 
   it("states progress without decimals", () => {
     expect(progressText(stations(google))).toBe("2 of 4 skills + 1 related");
