@@ -1,4 +1,5 @@
 """Flask server for the internship recommender: serves the UI and the JSON API."""
+import mimetypes
 import os
 import time
 from collections import defaultdict, deque
@@ -17,6 +18,7 @@ APP_DIR = os.path.dirname(__file__)
 # index.html for client-side routes.
 STATIC_DIR = os.path.join(APP_DIR, "static")
 
+mimetypes.add_type("image/webp", ".webp")  # missing from some Linux mime tables (Vercel)
 app = Flask(__name__, static_folder=None)
 
 _bundle = None
