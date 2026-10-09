@@ -39,7 +39,7 @@ export default function Board() {
     });
   }, [data]);
 
-  const ranked = data?.recommendations ?? [];
+  const ranked = data?.recommendations ?? []; // the API orders by coverage, CGPA breaking ties
   const p = { skills: profile.skills, cgpa: profile.cgpa };
 
   return (
@@ -75,12 +75,7 @@ export default function Board() {
               <div className="two">
                 <div className="field">
                   <label htmlFor="cgpa">CGPA <span className="hint">(out of 10)</span></label>
-                  <input id="cgpa" type="number" inputMode="decimal" min={0} max={10} step={0.1} placeholder="e.g. 8.2"
-                    value={profile.cgpa ?? ""}
-                    onChange={(e) => {
-                      const v = e.target.value === "" ? null : Number(e.target.value);
-                      store.setProfile({ ...profile, cgpa: v !== null && v >= 0 && v <= 10 ? v : null });
-                    }} />
+                  <CgpaInput value={profile.cgpa} onChange={(cgpa) => store.setProfile({ ...profile, cgpa })} />
                 </div>
                 <div className="field">
                   <label htmlFor="name">Name</label>
@@ -94,8 +89,9 @@ export default function Board() {
           </div>
         </section>
 
-        <div className="board-status" aria-live="polite" style={{ "--hero": `url("${HERO_PHOTO.src}")` } as CSSProperties}>
+        <div className="board-status" style={{ "--hero": `image-set(url("${HERO_PHOTO.src}") 1x, url("${HERO_PHOTO.src2x}") 2x)` } as CSSProperties}>
           {catalog.length > 0 && <p className="hero-line">{catalog.length} companies · {new Set(catalog.map((c) => c.location)).size} cities · one board</p>}
+          <div aria-live="polite" className="stack" style={{ gap: 6 }}>
           {loading && !data && <Busy>Scoring companies…</Busy>}
           {error && <ErrorNote>{error}</ErrorNote>}
           {data && !data.recognised.length && (
@@ -106,13 +102,14 @@ export default function Board() {
           )}
           {ranked.length > 0 && (
             <p className="hint">
-              Sorted closest first. Fit is how many of a company's skills you cover, from 51 synthetic
+              Sorted by how many of each company's skills you cover, with CGPA breaking ties. From 51 synthetic
               placements: a sanity signal, not a hiring prediction.
             </p>
           )}
           {!ranked.length && !loading && !error && (!data || !data.recognised.length) && (
             <p className="hint">What each company asks for. Add a skill and they sort by how well you fit.</p>
           )}
+          </div>
         </div>
 
         {ranked.length > 0
@@ -172,7 +169,30 @@ function CityPhoto({ company }: { company: string }) {
   if (!photo) return null;
   return (
     <figure className="photo">
-      <img src={photo.src} alt="" loading="lazy" decoding="async" />
+      <img src={photo.src} srcSet={`${photo.src} 500w, ${photo.src2x} 960w`}
+        sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 420px" alt="" loading="lazy" decoding="async" />
     </figure>
+  );
+}
+
+/** Keeps exactly what the student typed; only a valid 0–10 value reaches the profile. */
+function CgpaInput({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
+  const [text, setText] = useState(value === null ? "" : String(value));
+  useEffect(() => { if (value !== null && Number(text) !== value) setText(String(value)); }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  const n = Number(text);
+  const invalid = text.trim() !== "" && (!Number.isFinite(n) || n < 0 || n > 10);
+  return (
+    <>
+      <input id="cgpa" type="number" inputMode="decimal" min={0} max={10} step={0.1} placeholder="e.g. 8.2"
+        value={text} aria-invalid={invalid} aria-describedby={invalid ? "cgpa-err" : undefined}
+        onChange={(e) => {
+          const t = e.target.value;
+          setText(t);
+          const v = Number(t);
+          if (t.trim() === "") onChange(null);
+          else if (Number.isFinite(v) && v >= 0 && v <= 10) onChange(v);
+        }} />
+      {invalid && <span id="cgpa-err" className="field-err">CGPA is out of 10, so enter a number from 0 to 10.</span>}
+    </>
   );
 }

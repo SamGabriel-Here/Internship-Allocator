@@ -12,7 +12,6 @@ const icon = (d: ReactNode) => (props: { title?: string }) => (
 );
 export const IconClose = icon(<path d="M6 6l12 12M18 6L6 18" />);
 export const IconMenu = icon(<path d="M4 7h16M4 12h16M4 17h16" />);
-export const IconArrow = icon(<path d="M5 12h14M13 6l6 6-6 6" />);
 export const IconPlus = icon(<path d="M12 5v14M5 12h14" />);
 export const IconSun = icon(<><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>);
 export const IconMoon = icon(<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />);
@@ -24,17 +23,6 @@ export function BrandMark() {
       <rect className="mark-ink" x="18" y="0" width="16" height="8" />
       <rect className="mark-ink" x="18" y="10" width="16" height="8" />
     </svg>
-  );
-}
-
-// ---------- the legend every line diagram is read with ----------
-export function Legend() {
-  return (
-    <ul className="legend" aria-label="Key">
-      <li><i className="k-reached" />You have it</li>
-      <li><i className="k-transfer" />Related skill, counts half</li>
-      <li><i className="k-ahead" />To learn</li>
-    </ul>
   );
 }
 
@@ -78,7 +66,7 @@ export function YourLine({ skills, unrecognised, onRemove }: { skills: string[];
   const seen = useRef(new Set(skills));
   const fresh = skills.filter((s) => !seen.current.has(s));
   useEffect(() => { skills.forEach((s) => seen.current.add(s)); }, [skills]);
-  if (!skills.length) return <p className="empty-line">No skills yet. Add your first one below.</p>;
+  if (!skills.length) return <p className="empty-line">No skills yet. Add your first one above.</p>;
   return (
     <ol className="yourline" aria-label="Your skills">
       {skills.map((s) => {

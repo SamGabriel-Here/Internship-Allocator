@@ -5,12 +5,29 @@ import { bandLabel, label, stations, progressText } from "./lines";
 import { store, useResume } from "./store";
 
 export function ShareLink({ skills, cgpa }: { skills: string[]; cgpa: number | null }) {
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<"idle" | "copied" | "manual">("idle");
   const url = `${location.origin}/?skills=${encodeURIComponent(skills.join(","))}${cgpa !== null ? `&cgpa=${cgpa}` : ""}`;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setState("copied");
+      setTimeout(() => setState("idle"), 2000);
+    } catch {
+      setState("manual"); // clipboard blocked (permissions, insecure origin): show the link to copy by hand
+    }
+  };
+  if (state === "manual") {
+    return (
+      <span className="share-manual">
+        <label htmlFor="share-url" className="sr-only">Link to this board</label>
+        <input id="share-url" type="text" readOnly value={url} autoFocus onFocus={(e) => e.currentTarget.select()} />
+        <span role="status">Copying was blocked; the link is selected, press Ctrl or Cmd + C.</span>
+      </span>
+    );
+  }
   return (
-    <button type="button" className="btn quiet" style={{ minHeight: 0, padding: 0, fontSize: "inherit", fontWeight: 400 }}
-      onClick={() => navigator.clipboard?.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); })}>
-      {copied ? "Link copied" : "Copy link"}
+    <button type="button" className="btn quiet share" onClick={copy}>
+      <span role="status">{state === "copied" ? "Link copied" : "Copy link"}</span>
     </button>
   );
 }
@@ -58,10 +75,10 @@ export function Copilot({ profile, matches, enabled, provider, loaded }: {
   if (!enabled) {
     return (
       <section className="mod mod-side" aria-labelledby="ai-off">
-        <header className="mod-h"><h2 className="tab" id="ai-off">AI copilot is off</h2></header>
+        <header className="mod-h"><h2 className="tab neutral" id="ai-off">AI copilot is off</h2></header>
         <p className="hint">
           This server has no AI key, so the coaching features are switched off: a learning plan for your gaps,
-          answers to follow-up questions, and resume bullets tailored to a company. The map works fully without it.
+          answers to follow-up questions, and resume bullets tailored to a company. Everything else on the board works without it.
         </p>
       </section>
     );
@@ -87,7 +104,7 @@ function LearningPlan({ profile, who }: { profile: P; who: string }) {
   return (
     <section className="mod mod-side" aria-labelledby="plan-title">
       <header className="mod-h"><h2 className="tab" id="plan-title">Plan your next skills</h2></header>
-      <p className="hint">{who} turns the skills missing from your top three lines into a short, ordered plan.</p>
+      <p className="hint">{who} turns the skills missing from your top three matches into a short, ordered plan.</p>
       <div className="row-actions">
         <button className="btn secondary" type="button" onClick={run} disabled={busy}>{plan ? "Redo the plan" : "Make my plan"}</button>
         <span className="ai-tag">Written by {who}</span>
@@ -128,7 +145,7 @@ function Ask({ profile, who }: { profile: P; who: string }) {
       setQ("");
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
-  const suggestions = ["Why is my top match first?", "What should I learn first?", "Which line is the biggest reach?"];
+  const suggestions = ["Why is my top match first?", "What should I learn first?", "Which company is the biggest reach?"];
   return (
     <section className="mod mod-side" aria-labelledby="ask-title">
       <header className="mod-h"><h2 className="tab" id="ask-title">Ask about your matches</h2></header>

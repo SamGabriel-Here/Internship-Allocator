@@ -93,7 +93,7 @@ def rank(recognised: list[str], cgpa, top_k=None) -> list[dict]:
         return []
     bundle = get_bundle()
     student = {"Technical skills": ", ".join(recognised), "CGPA": cgpa}
-    return [
+    ranked = [
         {
             "company": p["company"],
             "confidence": round(p["score"] * 100),
@@ -107,8 +107,11 @@ def rank(recognised: list[str], cgpa, top_k=None) -> list[dict]:
             "location": p["meta"]["top_location"],
             "interns": p["meta"]["count"],
         }
-        for p in recommend(bundle, student, top_k=top_k or len(bundle["companies"]))
+        for p in recommend(bundle, student, top_k=len(bundle["companies"]))
     ]
+    # Order by what the UI explains, skill coverage; the CGPA-nudged score only breaks ties.
+    ranked.sort(key=lambda r: (r["coverage"], r["confidence"]), reverse=True)
+    return ranked[:top_k] if top_k else ranked
 
 
 def body() -> dict:

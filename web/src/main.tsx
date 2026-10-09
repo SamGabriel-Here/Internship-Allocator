@@ -38,9 +38,17 @@ function ThemeToggle() {
   );
 }
 
+const TITLES: Record<string, string> = {
+  "/": "Nextern — internships that match your skills",
+  "/insights": "Insights · Nextern",
+  "/history": "History · Nextern",
+  "/about": "How matching works · Nextern",
+};
+
 function Layout() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
+  useEffect(() => { document.title = TITLES[pathname] ?? "Page not found · Nextern"; }, [pathname]);
   useEffect(() => {
     setOpen(false);
     window.scrollTo(0, 0);

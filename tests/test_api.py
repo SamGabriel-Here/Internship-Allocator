@@ -29,7 +29,8 @@ def test_predict_returns_recommendations(client):
     assert body["unrecognised"] == ["klingon"]
     recs = body["recommendations"]
     assert len(recs) == 11  # every company, best first
-    assert [r["confidence"] for r in recs] == sorted((r["confidence"] for r in recs), reverse=True)
+    order = [(r["coverage"], r["confidence"]) for r in recs]
+    assert order == sorted(order, reverse=True)  # coverage first, CGPA-nudged score breaks ties
     rec = recs[0]
     assert {"confidence", "band", "required_skills", "matched_skills", "related_skills", "gap_skills"} <= rec.keys()
     assert rec["band"] in {"strong", "partial", "reach"}

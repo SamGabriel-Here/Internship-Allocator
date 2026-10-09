@@ -72,7 +72,7 @@ sensible ranking, not a production benchmark.
 ├── train.py           # Builds the model bundle from the dataset
 ├── internship_data.csv
 ├── web/               # React + TypeScript frontend (Vite), builds into static/
-│                      #   city photos are hotlinked from Wikimedia Commons, credited on /about
+│                      #   city photos (Wikimedia Commons) live in web/public/photos, credited on /about
 ├── tests/             # pytest suite for the recommender and the API
 ├── Dockerfile         # Node stage builds web/, Python stage serves it
 └── .github/workflows/ # CI: pytest, plus frontend tests and build
