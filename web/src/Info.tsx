@@ -21,7 +21,7 @@ export function Insights() {
           where their rows meet.
         </p>
       </div>
-      {!data && !error && <Busy>Loading the network…</Busy>}
+      {!data && !error && <Busy>Loading the dataset…</Busy>}
       {error && <ErrorNote>{error}</ErrorNote>}
       {data && (
         <>

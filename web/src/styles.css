@@ -70,6 +70,7 @@ h1, h2, h3 { margin: 0; line-height: 1.2; text-wrap: balance; }
 h1 { font-family: var(--serif); font-size: clamp(1.7rem, 2.8vw, 2.25rem); font-weight: 800; letter-spacing: -0.01em; }
 h2 { font-family: var(--serif); font-size: 1.15rem; font-weight: 800; }
 .mod-h .tab { font-family: var(--font); }
+.mod-h .tab.neutral { background: var(--ink-2); color: var(--panel); }
 h3 { font-family: var(--serif); font-size: 1.05rem; font-weight: 800; }
 p { margin: 0; }
 .num, td, .rank, .meta { font-variant-numeric: tabular-nums; }
@@ -148,9 +149,16 @@ main { max-width: 1320px; margin: 0 auto; padding: 20px var(--gutter) 48px; }
 .btn.secondary { background: var(--panel); color: var(--ink); }
 .btn.secondary:hover { background: var(--ground); }
 .btn.quiet {
-  background: none; border-color: transparent; color: var(--ink); min-height: 0; padding: 4px 0;
+  background: none; border-color: transparent; color: var(--ink); min-height: 24px; padding: 2px 0;
   font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em; justify-self: start;
 }
+/* "Copy link" sits in a module header: a 44px invisible hit area without growing the header. */
+.btn.quiet.share { position: relative; font-size: inherit; }
+.btn.quiet.share::after { content: ""; position: absolute; inset: -10px -8px; }
+.share-manual { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; white-space: normal; }
+.share-manual input { width: min(240px, 60vw); min-height: 28px; padding: 2px 6px; font-size: 0.75rem; }
+.field-err { font-size: 0.75rem; color: var(--err-ink); }
+input[aria-invalid="true"] { border-color: var(--err-ink); }
 .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
 .btn svg { width: 16px; height: 16px; }
 
@@ -287,8 +295,13 @@ button.chip.pick { font: inherit; font-size: 0.8125rem; }
   .mod, .board-status { grid-column: span 1; }
   .mod-profile { grid-row: span 2; }
 }
+@media (min-width: 701px) and (max-width: 1100px) {
+  .board-status { grid-column: 1 / -1; order: -1; min-height: 130px; } /* a full-width band above the two columns */
+}
 @media (max-width: 700px) {
   .mosaic { grid-template-columns: 1fr; }
+  .btn.quiet, .switch button, details.optional summary, .menu-btn { min-height: 44px; }
+  .theme-toggle { width: 44px; height: 44px; }
   .mod-profile { grid-row: auto; }
   .btn { min-height: 44px; }
   .yourline li { min-height: 44px; }
