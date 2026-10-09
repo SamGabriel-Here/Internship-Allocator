@@ -52,7 +52,7 @@ export default function Board() {
         </p>
       </div>
 
-      <div className="mosaic">
+      <div className="board">
         <section className="mod mod-profile" aria-labelledby="skills-title">
           <header className="mod-h">
             <h2 className="tab" id="skills-title">Your skills</h2>
@@ -67,6 +67,14 @@ export default function Board() {
               ? <SkillInput onAdd={(s) => s.forEach(store.addSkill)} autoFocus={!profile.skills.length} />
               : <ResumeReader enabled={!!config?.copilot_enabled} provider={config?.copilot_provider ?? null} loaded={!!config} />}
             <YourLine skills={profile.skills} unrecognised={data?.unrecognised ?? []} onRemove={store.removeSkill} />
+            {!profile.skills.length && (
+              <div className="try">
+                <span className="hint">Or start with</span>
+                {EXAMPLES.map((s) => (
+                  <button key={s} type="button" className="chip pick" onClick={() => store.addSkill(s)}>+ {label(s, false)}</button>
+                ))}
+              </div>
+            )}
             {profile.skills.length > 0 && (
               <button className="btn quiet" type="button" onClick={() => store.setProfile({ ...profile, skills: [] })}>Clear all skills</button>
             )}
@@ -89,8 +97,19 @@ export default function Board() {
           </div>
         </section>
 
+        <div className="mosaic">
         <div className="board-status" style={{ "--hero": `image-set(url("${HERO_PHOTO.src}") 1x, url("${HERO_PHOTO.src2x}") 2x)` } as CSSProperties}>
-          {catalog.length > 0 && <p className="hero-line">{catalog.length} companies · {new Set(catalog.map((c) => c.location)).size} cities · one board</p>}
+          {ranked.length > 0 ? (
+            <>
+              <p className="hero-line">Closest match: {ranked[0].company}</p>
+              <p className="hero-sub">
+                <b>{bandLabel[ranked[0].band]}</b> · {progressText(stations(ranked[0]))} ·{" "}
+                {ranked[0].gap_skills[0] ? <>next skill to learn: <b>{label(ranked[0].gap_skills[0], false)}</b></> : "nothing missing"}
+              </p>
+            </>
+          ) : catalog.length > 0 && (
+            <p className="hero-line">{catalog.length} companies · {new Set(catalog.map((c) => c.location)).size} cities · one board</p>
+          )}
           <div aria-live="polite" className="stack" style={{ gap: 6 }}>
           {loading && !data && <Busy>Scoring companies…</Busy>}
           {error && <ErrorNote>{error}</ErrorNote>}
@@ -112,23 +131,27 @@ export default function Board() {
           </div>
         </div>
 
-        {ranked.length > 0
-          ? ranked.map((m, i) => <CompanyModule key={m.company} m={m} rank={i + 1} wide={i < 3} />)
-          : catalog.map((c) => <UnscoredModule key={c.name} name={c.name} skills={c.top_skills} location={c.location} />)}
-
-        {ranked.length > 0 && <PostingCheck profile={p} />}
-        {ranked.length > 0 && (
-          <Copilot profile={p} matches={ranked} enabled={!!config?.copilot_enabled} provider={config?.copilot_provider ?? null} loaded={!!config} />
-        )}
+        {ranked.length > 0 ? (
+          <>
+            {ranked.slice(0, 3).map((m, i) => <CompanyModule key={m.company} m={m} rank={i + 1} tier={i === 0 ? "first" : "top"} />)}
+            <PostingCheck profile={p} />
+            {ranked.slice(3).map((m, i) => <CompanyModule key={m.company} m={m} rank={i + 4} tier="rest" />)}
+            <Copilot profile={p} matches={ranked} enabled={!!config?.copilot_enabled} provider={config?.copilot_provider ?? null} loaded={!!config} />
+          </>
+        ) : catalog.map((c) => <UnscoredModule key={c.name} name={c.name} skills={c.top_skills} location={c.location} />)}
+        </div>
       </div>
     </>
   );
 }
 
-function CompanyModule({ m, rank, wide }: { m: Match; rank: number; wide: boolean }) {
+const EXAMPLES = ["python", "machine learning", "sql", "react", "java"];
+
+function CompanyModule({ m, rank, tier }: { m: Match; rank: number; tier: "first" | "top" | "rest" }) {
   const list = stations(m);
+  const wide = tier !== "rest";
   return (
-    <article className={`mod co${wide ? " wide" : ""}`} aria-labelledby={`co-${rank}`}>
+    <article className={`mod co ${tier}${wide ? " wide" : ""}`} aria-labelledby={`co-${rank}`}>
       <CityPhoto company={m.company} />
       <header className="mod-h">
         <span className={`rank${wide ? " top" : ""}`} aria-hidden="true">{rank}</span>

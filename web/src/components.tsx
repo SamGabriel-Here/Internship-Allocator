@@ -1,7 +1,7 @@
-import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { api, type Match, type Prediction } from "./api";
 import { store, type Profile } from "./store";
-import { herePosition, label, progressText, stations, type Station } from "./lines";
+import { label, type Station } from "./lines";
 
 // ---------- icons: one 24px grid, 2px stroke ----------
 const icon = (d: ReactNode) => (props: { title?: string }) => (
@@ -23,41 +23,6 @@ export function BrandMark() {
       <rect className="mark-ink" x="18" y="0" width="16" height="8" />
       <rect className="mark-ink" x="18" y="10" width="16" height="8" />
     </svg>
-  );
-}
-
-// ---------- strip map: one company's required skills as a line ----------
-type StripProps = {
-  company: string;
-  colour?: string;
-  matched_skills: string[];
-  related_skills: { skill: string; via: string }[];
-  gap_skills: string[];
-  compact?: boolean;
-  network?: boolean; // dataset view: every station drawn, no "you are here"
-};
-
-export function StripMap(props: StripProps) {
-  const list: Station[] = stations(props);
-  const n = Math.max(list.length, 1);
-  const here = props.network ? list.length : herePosition(list);
-  const herePct = (here / n) * 100;
-  const style = { ...(props.colour ? { "--c": props.colour } : {}), "--n": n, "--here": `${herePct}%` } as CSSProperties;
-  return (
-    <div className={`strip${props.compact ? " compact" : ""}${props.network ? " network-strip" : ""}`} style={style}>
-      <ol className="track" aria-label={props.network ? `${props.company}: ${list.length} skills` : `${props.company}: ${progressText(list)}`}>
-        {list.map((s) => (
-          <li key={s.skill} className={s.kind}>
-            <span className="mark" aria-hidden="true" />
-            <span className="st-label">
-              {!props.network && <span className="sr-only">{s.kind === "reached" ? "You have " : s.kind === "transfer" ? "Partly covered: " : "To learn: "}</span>}
-              <abbr title={label(s.skill, false)} style={{ textDecoration: "none" }}>{label(s.skill)}</abbr>
-              {s.via && <span className="via">via {label(s.via)}</span>}
-            </span>
-          </li>
-        ))}
-      </ol>
-    </div>
   );
 }
 

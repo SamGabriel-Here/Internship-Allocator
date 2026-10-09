@@ -19,8 +19,8 @@ follow your system, with a toggle to switch.
 
 ## What you can do
 
-- **Add your skills.** Type them (with autocomplete from the ontology) and an optional
-  CGPA; the board re-sorts as you go, and skills the recommender doesn't know are flagged
+- **Add your skills.** Type them (with autocomplete from the ontology), tap an example, or
+  add an optional CGPA; your skills stay pinned beside the companies, the board re-sorts as you go, and skills the recommender doesn't know are flagged
   instead of being silently ignored.
 - **Read every company.** All 11 companies, closest first, each with a fit band
   (strong / partial / reach), the skill breakdown and, for the top three, the next skill to
@@ -35,7 +35,7 @@ follow your system, with a toggle to switch.
   resume bullets for a chosen company without inventing experience. It only explains what
   the ontology computed; it never ranks companies itself.
 
-![Insights: the skills each company asks for, with shared skills joined across companies](docs/screenshot-network.png)
+![Insights: a company × skill grid; filled squares are skills several companies ask for](docs/screenshot-network.png)
 
 ## How it works
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, type Insights as InsightsData } from "./api";
-import { Busy, ErrorNote, StripMap } from "./components";
+import { Busy, ErrorNote } from "./components";
 import { bandLabel, label } from "./lines";
 import { COMPANY_PHOTOS, HERO_PHOTO } from "./photos";
 import { store, useHistory } from "./store";
@@ -33,7 +33,7 @@ export function Insights() {
               each student is removed before scoring. A sanity signal, not a benchmark.
             </p>
           </div>
-          <Network companies={data.companies} />
+          <SkillGrid companies={data.companies} />
           <section className="section" aria-labelledby="busiest">
             <h2 id="busiest">Most common skills</h2>
             <p className="hint">The skills students in the dataset list most often.</p>
@@ -71,63 +71,54 @@ export function Insights() {
   );
 }
 
-function Network({ companies }: { companies: InsightsData["companies"] }) {
+function SkillGrid({ companies }: { companies: InsightsData["companies"] }) {
   const rows = chainBySharedSkills(companies);
-  // Columns: each row's skills in turn, so every line stays short and readable.
+  // Columns follow each row's skills in turn, so shared skills sit next to the companies that share them.
   const cols: string[] = [];
   rows.forEach((c) => c.top_skills.forEach((s) => { if (!cols.includes(s)) cols.push(s); }));
   const users = (s: string) => companies.filter((c) => c.top_skills.includes(s)).length;
-  const L = 112, T = 118, CW = 34, RH = 40;
-  const W = L + cols.length * CW + 16, H = T + companies.length * RH + 8;
-  const x = (s: string) => L + cols.indexOf(s) * CW + CW / 2;
-  const y = (i: number) => T + i * RH + RH / 2;
 
   return (
-    <>
-    <figure className="network-wrap" style={{ margin: 0 }}>
-      <svg className="network" viewBox={`0 0 ${W} ${H}`} width={W} role="img"
-        aria-label={`Diagram of ${companies.length} companies and the ${cols.length} skills they ask for. The table below lists the same data.`}>
-        {cols.map((s) => (
-          <g key={s}>
-            <text x={x(s)} y={T - 10} fontSize="12.5" className={users(s) > 1 ? "col-label shared" : "col-label"}
-              transform={`rotate(-45 ${x(s)} ${T - 10})`}>{label(s)}</text>
-          </g>
-        ))}
-        {rows.map((c, i) => {
-          const xs = c.top_skills.map(x);
-          return (
-            <g key={c.name} className="net-row">
-              <text x={L - 14} y={y(i) + 4.5} textAnchor="end" fontSize="13.5" className="row-label">{c.name}</text>
-              <line x1={Math.min(...xs) - 10} x2={Math.max(...xs) + 10} y1={y(i)} y2={y(i)} className="net-line" strokeWidth="3" strokeLinecap="round" />
-              {c.top_skills.filter((s) => users(s) === 1).map((s) =>
-                <circle key={s} cx={x(s)} cy={y(i)} r="4.5" className="net-dot" strokeWidth="2" />)}
-            </g>
-          );
-        })}
-        {cols.filter((s) => users(s) > 1).map((s) => {
-          // An interchange: one white capsule joining every line that stops at this skill.
-          const at = rows.flatMap((c, i) => (c.top_skills.includes(s) ? [y(i)] : []));
-          const top = Math.min(...at) - 9, bottom = Math.max(...at) + 9;
-          return <rect key={s} x={x(s) - 5} y={top + 4} width="10" height={bottom - top - 8} rx="5" className="net-bar" />;
-        })}
-      </svg>
-      <figcaption className="hint">Filled bars join the companies that ask for the same skill. Open dots are skills only one company asks for.</figcaption>
+    <figure className="grid-figure">
+      <ul className="legend">
+        <li><i className="k-reached" />Asked for by several companies</li>
+        <li><i className="k-ahead" />Only this company asks for it</li>
+      </ul>
+      <div className="table-wrap skill-grid-wrap">
+        <table className="skill-grid">
+          <caption className="sr-only">Which skills each company in the dataset asks for</caption>
+          <thead>
+            <tr>
+              <th scope="col" className="corner">Company</th>
+              {cols.map((s) => <th key={s} scope="col" className={users(s) > 1 ? "shared" : undefined}><span>{label(s)}</span></th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((c) => (
+              <tr key={c.name}>
+                <th scope="row">{c.name}</th>
+                {cols.map((s) => {
+                  const asks = c.top_skills.includes(s);
+                  return (
+                    <td key={s}>
+                      {asks && <i className={`sq ${users(s) > 1 ? "have" : "learn-plain"}`} role="img"
+                        aria-label={`${c.name} asks for ${label(s, false)}${users(s) > 1 ? `, as do ${users(s) - 1} other${users(s) > 2 ? "s" : ""}` : ""}`} />}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row">Companies</th>
+              {cols.map((s) => <td key={s} className="num">{users(s)}</td>)}
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <figcaption className="hint">Each row is a company and each column a skill. Read down a column to see how many companies one skill opens.</figcaption>
     </figure>
-    <ul className="legend corridor-legend">
-      <li><i className="k-reached" />Several companies ask for it</li>
-      <li><i className="k-ahead" />Only this company asks for it</li>
-    </ul>
-    <ul className="corridors" aria-label="Companies and the skills they ask for">
-      {rows.map((c) => (
-        <li key={c.name}>
-          <span className="co-name">{c.name}</span>
-          <StripMap network compact company={c.name}
-            matched_skills={c.top_skills.filter((s) => users(s) > 1)} related_skills={[]}
-            gap_skills={c.top_skills.filter((s) => users(s) === 1)} />
-        </li>
-      ))}
-    </ul>
-    </>
   );
 }
 
