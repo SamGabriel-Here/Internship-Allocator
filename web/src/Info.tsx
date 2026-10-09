@@ -257,7 +257,7 @@ export function About() {
             </tbody>
           </table>
         </div>
-        <pre><code>{`curl -X POST https://getnextern.onrender.com/api/predict \\
+        <pre><code>{`curl -X POST https://getnextern.vercel.app/api/predict \\
   -H "Content-Type: application/json" \\
   -d '{"skills": "python, machine learning", "cgpa": 8.5}'`}</code></pre>
       </section>

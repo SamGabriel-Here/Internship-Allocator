@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: getnextern
-    runtime: docker
-    plan: free
-    dockerfilePath: ./Dockerfile
-    healthCheckPath: /health
-    autoDeploy: true

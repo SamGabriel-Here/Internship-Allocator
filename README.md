@@ -3,8 +3,7 @@
 # Nextern — Internship Recommender
 
 
-**Live demo: [getnextern.onrender.com](https://getnextern.onrender.com)**
-_(free tier — the first request after idle can take ~50s to wake)_
+**Live demo: [getnextern.vercel.app](https://getnextern.vercel.app)**
 
 ![The Nextern board: your skills on the left, every company ranked beside them with what you have, what counts partially and what to learn](docs/screenshot-matches.png)
 
@@ -55,7 +54,7 @@ follow your system, with a toggle to switch.
 
 > **Why not embeddings?** Static word embeddings were tried and rejected: on short tech
 > jargon they scored `react`↔`vue` ≈ 0.05 and `ML`↔`machine learning` ≈ 0.29 — worse than
-> the ontology. A transformer model would work but doesn't fit the 512 MB free tier.
+> the ontology. A transformer model would work but is too heavy for a free-tier deploy.
 
 ### On accuracy
 
@@ -176,9 +175,9 @@ docker run -p 7860:7860 nextern
 
 ## Deployment
 
-Deployed on [Render](https://render.com) as a Docker web service via `render.yaml`.
-Pushing to `main` redeploys automatically; the image builds the frontend and the model
-bundle, so the container starts ready to serve.
+Deployed on [Vercel](https://vercel.com): `vercel.json` builds `web/` into `static/`, and
+`app.py` runs as a Python function that serves both the API and the built frontend. Pushing
+to `main` redeploys automatically. The Dockerfile still runs the same app anywhere else.
 
 ## License
 

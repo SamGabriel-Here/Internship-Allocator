@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "flask",
+  "buildCommand": "cd web && npm ci && npm run build",
+  "functions": {
+    "app.py": {
+      "excludeFiles": "{web/**,tests/**,docs/**}"
+    }
+  }
+}
