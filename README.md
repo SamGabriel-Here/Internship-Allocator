@@ -1,4 +1,7 @@
+<img src="web/public/favicon.svg" width="56" alt="Nextern seal: 次, Japanese for next" align="left">
+
 # Nextern — Internship Recommender
+
 
 **Live demo: [getnextern.onrender.com](https://getnextern.onrender.com)**
 _(free tier — the first request after idle can take ~50s to wake)_

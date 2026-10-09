@@ -87,9 +87,8 @@ html { scrollbar-color: var(--rule-strong) transparent; }
   display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px;
 }
 .brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--serif); font-weight: 800; font-size: 1.2rem; text-decoration: none; }
-.brand svg { width: 30px; height: 16px; flex: none; }
+.brand svg { width: 26px; height: 26px; flex: none; }
 .brand .mark-red { fill: var(--red-fill); }
-.brand .mark-ink { fill: var(--ink); }
 .theme-toggle {
   display: inline-grid; place-items: center; width: 36px; height: 36px; margin-left: 6px; padding: 0;
   background: none; border: 1px solid var(--rule-strong); border-radius: var(--radius); color: var(--ink); cursor: pointer;
