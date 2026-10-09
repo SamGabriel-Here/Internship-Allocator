@@ -324,7 +324,7 @@ def api_not_found(_):
 
 
 # Pages of the previous multi-page UI, so old links still land somewhere sensible.
-LEGACY_PAGES = {"index.html": "/", "results.html": "/map", "insights.html": "/insights",
+LEGACY_PAGES = {"index.html": "/", "results.html": "/", "insights.html": "/insights",
                 "history.html": "/history", "about.html": "/about"}
 
 

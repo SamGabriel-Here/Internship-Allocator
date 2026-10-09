@@ -4,7 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Nextern maps your skills onto internship requirements: see which companies you already connect to, what counts partially, and which skills to learn next." />
-    <meta name="theme-color" content="#f3f5f4" />
+    <meta name="theme-color" content="#eef0f2" />
+    <script>
+      try {
+        var t = localStorage.getItem("nextern.theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+        if ((t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark")
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#0f1215");
+      } catch (e) {}
+    </script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>Nextern — map your skills to internships</title>
   </head>

@@ -1,29 +1,7 @@
-// Pure helpers behind every line diagram: a company's colour, how a skill is
-// labelled, and the order its stations are drawn in.
+// Pure helpers for the skill breakdown: how a skill is labelled and the order
+// its covered, related and missing skills are shown in.
 import type { Match, Related } from "./api";
 
-// One ink per company line. Each passes 3:1 against the ground and white.
-const LINE_COLOURS: Record<string, string> = {
-  Amazon: "#d9581a",
-  Cisco: "#0e8494",
-  Deloitte: "#11865a",
-  Google: "#1f5fbf",
-  IBM: "#6a3fa0",
-  Infosys: "#56697d",
-  Microsoft: "#d01f3a",
-  Paytm: "#ab1179",
-  Swiggy: "#a87600",
-  TCS: "#cf3d77",
-  Wipro: "#8a5a2b",
-};
-const SPARE = ["#1f5fbf", "#11865a", "#d01f3a", "#6a3fa0", "#d9581a", "#0e8494"];
-
-export function lineColour(company: string): string {
-  if (LINE_COLOURS[company]) return LINE_COLOURS[company];
-  let h = 0;
-  for (const ch of company) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return SPARE[h % SPARE.length];
-}
 
 const SHORT: Record<string, string> = {
   "natural language processing": "NLP",

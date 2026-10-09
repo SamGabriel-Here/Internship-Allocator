@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { api, type Prediction } from "./api";
+import { api, type Match, type Prediction } from "./api";
 import { store, type Profile } from "./store";
-import { herePosition, label, lineColour, progressText, stations, type Station } from "./lines";
+import { herePosition, label, progressText, stations, type Station } from "./lines";
 
 // ---------- icons: one 24px grid, 2px stroke ----------
 const icon = (d: ReactNode) => (props: { title?: string }) => (
@@ -14,13 +14,15 @@ export const IconClose = icon(<path d="M6 6l12 12M18 6L6 18" />);
 export const IconMenu = icon(<path d="M4 7h16M4 12h16M4 17h16" />);
 export const IconArrow = icon(<path d="M5 12h14M13 6l6 6-6 6" />);
 export const IconPlus = icon(<path d="M12 5v14M5 12h14" />);
+export const IconSun = icon(<><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>);
+export const IconMoon = icon(<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />);
 
 export function BrandMark() {
   return (
     <svg viewBox="0 0 34 18" aria-hidden="true">
-      <rect x="1" y="7" width="32" height="4" rx="2" fill="#13202f" />
-      <circle cx="9" cy="9" r="6" fill="#fff" stroke="#13202f" strokeWidth="3" />
-      <rect x="23" y="5" width="3" height="10" rx="1" fill="#d01f3a" />
+      <rect className="mark-red" x="0" y="0" width="16" height="18" />
+      <rect className="mark-ink" x="18" y="0" width="16" height="8" />
+      <rect className="mark-ink" x="18" y="10" width="16" height="8" />
     </svg>
   );
 }
@@ -28,10 +30,10 @@ export function BrandMark() {
 // ---------- the legend every line diagram is read with ----------
 export function Legend() {
   return (
-    <ul className="legend" aria-label="How to read a line">
+    <ul className="legend" aria-label="Key">
       <li><i className="k-reached" />You have it</li>
-      <li><i className="k-transfer" />A related skill counts half</li>
-      <li><i className="k-ahead" />Still to learn</li>
+      <li><i className="k-transfer" />Related skill, counts half</li>
+      <li><i className="k-ahead" />To learn</li>
     </ul>
   );
 }
@@ -52,11 +54,9 @@ export function StripMap(props: StripProps) {
   const n = Math.max(list.length, 1);
   const here = props.network ? list.length : herePosition(list);
   const herePct = (here / n) * 100;
-  const style = { "--c": props.colour ?? lineColour(props.company), "--n": n, "--here": `${herePct}%` } as CSSProperties;
-  const edge = here === 0 ? "edge-start" : here === n ? "edge-end" : "";
+  const style = { ...(props.colour ? { "--c": props.colour } : {}), "--n": n, "--here": `${herePct}%` } as CSSProperties;
   return (
     <div className={`strip${props.compact ? " compact" : ""}${props.network ? " network-strip" : ""}`} style={style}>
-      <span className={`here ${edge}`} aria-hidden="true">{here === 0 ? "Start here" : here === n && !list.some((s) => s.kind === "transfer") ? "Arrived" : "You are here"}</span>
       <ol className="track" aria-label={props.network ? `${props.company}: ${list.length} skills` : `${props.company}: ${progressText(list)}`}>
         {list.map((s) => (
           <li key={s.skill} className={s.kind}>
@@ -78,7 +78,7 @@ export function YourLine({ skills, unrecognised, onRemove }: { skills: string[];
   const seen = useRef(new Set(skills));
   const fresh = skills.filter((s) => !seen.current.has(s));
   useEffect(() => { skills.forEach((s) => seen.current.add(s)); }, [skills]);
-  if (!skills.length) return <p className="empty-line">No skills yet. Add your first one below; each becomes a station on your line.</p>;
+  if (!skills.length) return <p className="empty-line">No skills yet. Add your first one below.</p>;
   return (
     <ol className="yourline" aria-label="Your skills">
       {skills.map((s) => {
@@ -88,7 +88,7 @@ export function YourLine({ skills, unrecognised, onRemove }: { skills: string[];
             <span className="stop" aria-hidden="true" />
             <span className="name">
               {label(s, false)}
-              {off && <span className="tag"><br />Not on our map, so it can't be matched</span>}
+              {off && <span className="tag"><br />Not recognised, so it can't be matched</span>}
             </span>
             <button type="button" className="x" onClick={() => onRemove(s)} aria-label={`Remove ${label(s, false)}`}>
               <IconClose />
@@ -179,3 +179,42 @@ export function Busy({ children }: { children: ReactNode }) {
 export function ErrorNote({ children }: { children: ReactNode }) {
   return <p className="notice err" role="alert">{children}</p>;
 }
+
+// ---------- the fixed company breakdown shared by every module ----------
+export function Key() {
+  return (
+    <dl className="key" aria-label="How to read a company">
+      <dt><i className="sq have" aria-hidden="true" />Have</dt><dd>you list this skill</dd>
+      <dt><i className="sq related" aria-hidden="true" />Related</dt><dd>a skill in the same family counts half</dd>
+      <dt><i className="sq learn" aria-hidden="true" />To learn</dt><dd>asked for, and you don't have it yet</dd>
+    </dl>
+  );
+}
+
+/** One square per required skill, in the order have → related → to learn. */
+export function Coverage({ list }: { list: Station[] }) {
+  return (
+    <span className="coverage" aria-hidden="true">
+      {list.map((s) => <i key={s.skill} className={`sq ${s.kind === "reached" ? "have" : s.kind === "transfer" ? "related" : "learn"}`} />)}
+    </span>
+  );
+}
+
+/** The fixed breakdown every company module and the posting check share. */
+export function Breakdown({ m }: { m: Pick<Match, "matched_skills" | "related_skills" | "gap_skills"> }) {
+  const none = <span className="none">—</span>;
+  return (
+    <dl className="rows">
+      <dt>Have</dt>
+      <dd>{m.matched_skills.length ? m.matched_skills.map((s) => <span key={s} className="chip have">{label(s, false)}</span>) : none}</dd>
+      <dt>Related</dt>
+      <dd>{m.related_skills.length ? m.related_skills.map((r) => (
+        <span key={r.skill} className="chip related" title={`Counts half, through ${label(r.via, false)}`}>
+          {label(r.skill, false)} <span className="via">via {label(r.via)}</span>
+        </span>)) : none}</dd>
+      <dt className={m.gap_skills.length ? "learn" : undefined}>To learn</dt>
+      <dd>{m.gap_skills.length ? m.gap_skills.map((s) => <span key={s} className="chip learn">{label(s, false)}</span>) : none}</dd>
+    </dl>
+  );
+}
+
