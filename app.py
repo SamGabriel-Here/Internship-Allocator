@@ -21,8 +21,8 @@ app = Flask(__name__, static_folder=None)
 
 _bundle = None
 
-# Simple per-IP sliding-window rate limiter. In-memory is fine: the free tier runs a
-# single worker, and the goal is basic abuse protection, not distributed quotas.
+# Simple per-IP sliding-window rate limiter, per instance. In-memory is fine: the goal
+# is basic abuse protection, not distributed quotas.
 _hits: dict = defaultdict(deque)
 
 def rate_limit(max_per_minute: int):
@@ -48,7 +48,10 @@ def get_bundle() -> dict:
     if _bundle is None:
         if not os.path.exists(MODEL_PATH):
             _bundle = build_bundle(load_dataset())
-            joblib.dump(_bundle, MODEL_PATH)
+            try:
+                joblib.dump(_bundle, MODEL_PATH)
+            except OSError:
+                pass  # read-only filesystem (Vercel): rebuilding per cold start is cheap
         else:
             _bundle = joblib.load(MODEL_PATH)
     return _bundle
