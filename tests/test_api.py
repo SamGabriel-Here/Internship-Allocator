@@ -52,7 +52,7 @@ def test_spa_routes_fall_back_to_index(client):
     assert resp.status_code in (200, 503)  # 503 only when the frontend isn't built
     assert client.get("/api/nope").status_code == 404
     old = client.get("/results.html")
-    assert old.status_code == 301 and old.headers["Location"].endswith("/map")
+    assert old.status_code == 301 and old.headers["Location"].endswith("/")
 
 
 def test_predict_rejects_empty_skills(client):

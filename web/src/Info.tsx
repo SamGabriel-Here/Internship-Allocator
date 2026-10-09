@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, type Insights as InsightsData } from "./api";
 import { Busy, ErrorNote, StripMap } from "./components";
-import { bandLabel, label, lineColour } from "./lines";
+import { bandLabel, label } from "./lines";
+import { COMPANY_PHOTOS, HERO_PHOTO } from "./photos";
 import { store, useHistory } from "./store";
 
 // ---------------------------------------------------------------- insights
@@ -14,10 +15,10 @@ export function Insights() {
   return (
     <>
       <div className="page-head">
-        <h1>The whole network</h1>
+        <h1>Dataset overview</h1>
         <p className="lede">
-          Every company in the dataset drawn as a line through the skills it asks for. Where lines share an
-          interchange, one skill opens more than one company.
+          The skills each company in the dataset asks for. A skill shared by several companies is marked
+          where their rows meet.
         </p>
       </div>
       {!data && !error && <Busy>Loading the network…</Busy>}
@@ -34,7 +35,7 @@ export function Insights() {
           </div>
           <Network companies={data.companies} />
           <section className="section" aria-labelledby="busiest">
-            <h2 id="busiest">Busiest interchanges</h2>
+            <h2 id="busiest">Most common skills</h2>
             <p className="hint">The skills students in the dataset list most often.</p>
             <ol className="chips">
               {data.top_skills.map((s) => <li key={s.skill} className="chip">{label(s.skill, false)} <span className="hint num">{s.count}</span></li>)}
@@ -49,8 +50,8 @@ export function Insights() {
                   {data.companies.map((c) => (
                     <tr key={c.name}>
                       <td className="wide">
-                        <span className="co-name" style={{ "--c": lineColour(c.name), fontSize: "1rem" } as CSSProperties}>
-                          <span className="bullet" aria-hidden="true" />{c.name}
+                        <span className="co-name" style={{ fontSize: "1rem" }}>
+                          {c.name}
                         </span>
                       </td>
                       <td data-label="Interns">{c.interns}</td>
@@ -85,22 +86,21 @@ function Network({ companies }: { companies: InsightsData["companies"] }) {
     <>
     <figure className="network-wrap" style={{ margin: 0 }}>
       <svg className="network" viewBox={`0 0 ${W} ${H}`} width={W} role="img"
-        aria-label={`Transit-style diagram of ${companies.length} companies and the ${cols.length} skills they ask for. The table below lists the same data.`}>
+        aria-label={`Diagram of ${companies.length} companies and the ${cols.length} skills they ask for. The table below lists the same data.`}>
         {cols.map((s) => (
           <g key={s}>
-            <text x={x(s)} y={T - 10} fontSize="12.5" fontWeight={users(s) > 1 ? 700 : 500} fill={users(s) > 1 ? "#13202f" : "#4e5d6c"}
+            <text x={x(s)} y={T - 10} fontSize="12.5" className={users(s) > 1 ? "col-label shared" : "col-label"}
               transform={`rotate(-45 ${x(s)} ${T - 10})`}>{label(s)}</text>
           </g>
         ))}
         {rows.map((c, i) => {
           const xs = c.top_skills.map(x);
-          const colour = lineColour(c.name);
           return (
             <g key={c.name} className="net-row">
-              <text x={L - 14} y={y(i) + 4.5} textAnchor="end" fontSize="13.5" fontWeight="700" fill="#13202f">{c.name}</text>
-              <line x1={Math.min(...xs) - 10} x2={Math.max(...xs) + 10} y1={y(i)} y2={y(i)} stroke={colour} strokeWidth="6" strokeLinecap="round" />
+              <text x={L - 14} y={y(i) + 4.5} textAnchor="end" fontSize="13.5" className="row-label">{c.name}</text>
+              <line x1={Math.min(...xs) - 10} x2={Math.max(...xs) + 10} y1={y(i)} y2={y(i)} className="net-line" strokeWidth="3" strokeLinecap="round" />
               {c.top_skills.filter((s) => users(s) === 1).map((s) =>
-                <rect key={s} x={x(s) - 2.5} y={y(i) - 1} width="5" height="13" rx="1" fill={colour} />)}
+                <circle key={s} cx={x(s)} cy={y(i)} r="4.5" className="net-dot" strokeWidth="2" />)}
             </g>
           );
         })}
@@ -108,19 +108,19 @@ function Network({ companies }: { companies: InsightsData["companies"] }) {
           // An interchange: one white capsule joining every line that stops at this skill.
           const at = rows.flatMap((c, i) => (c.top_skills.includes(s) ? [y(i)] : []));
           const top = Math.min(...at) - 9, bottom = Math.max(...at) + 9;
-          return <rect key={s} x={x(s) - 9} y={top} width="18" height={bottom - top} rx="9" fill="#fff" stroke="#13202f" strokeWidth="3" />;
+          return <rect key={s} x={x(s) - 5} y={top + 4} width="10" height={bottom - top - 8} rx="5" className="net-bar" />;
         })}
       </svg>
-      <figcaption className="hint">White interchanges join every company that asks for the same skill. Ticks are skills only one company asks for.</figcaption>
+      <figcaption className="hint">Filled bars join the companies that ask for the same skill. Open dots are skills only one company asks for.</figcaption>
     </figure>
     <ul className="legend corridor-legend">
-      <li><i className="k-interchange" />Interchange: several companies ask for it</li>
+      <li><i className="k-reached" />Several companies ask for it</li>
       <li><i className="k-ahead" />Only this company asks for it</li>
     </ul>
     <ul className="corridors" aria-label="Companies and the skills they ask for">
       {rows.map((c) => (
-        <li key={c.name} style={{ "--c": lineColour(c.name) } as CSSProperties}>
-          <span className="co-name"><span className="bullet" aria-hidden="true" />{c.name}</span>
+        <li key={c.name}>
+          <span className="co-name">{c.name}</span>
           <StripMap network compact company={c.name}
             matched_skills={c.top_skills.filter((s) => users(s) > 1)} related_skills={[]}
             gap_skills={c.top_skills.filter((s) => users(s) === 1)} />
@@ -156,13 +156,13 @@ export function History() {
   return (
     <>
       <div className="page-head">
-        <h1>Past maps</h1>
+        <h1>History</h1>
         <p className="lede">Each time you open your matches, the profile is saved here. Stored only in this browser; nothing is sent anywhere.</p>
       </div>
       {!history.length ? (
         <div className="empty-state">
-          <p>No saved maps yet. They appear here after you open your matches.</p>
-          <Link className="btn" to="/">Build your line</Link>
+          <p>Nothing saved yet. Your searches appear here after you open your matches.</p>
+          <Link className="btn" to="/">Add your skills</Link>
         </div>
       ) : (
         <>
@@ -174,8 +174,8 @@ export function History() {
                   <p><strong>{h.skills.map((s) => label(s, false)).join(", ")}</strong>{h.cgpa !== null && <span className="hint"> · CGPA {h.cgpa}</span>}</p>
                   <p className="tops">
                     {h.top.map((t) => (
-                      <span key={t.company} style={{ "--c": lineColour(t.company) } as CSSProperties}>
-                        <i aria-hidden="true" />{t.company} <span className="hint">{bandLabel[t.band]}</span>
+                      <span key={t.company}>
+                        {t.company} <span className="hint">{bandLabel[t.band]}</span>
                       </span>
                     ))}
                   </p>
@@ -183,7 +183,7 @@ export function History() {
                 <button className="btn secondary" type="button" onClick={() => {
                   store.setProfile({ name: "", skills: h.skills, cgpa: h.cgpa });
                   navigate("/map");
-                }}>Reopen this map</button>
+                }}>Open again</button>
               </li>
             ))}
           </ol>
@@ -192,7 +192,7 @@ export function History() {
           </div>
           <dialog ref={dialog} aria-labelledby="clear-title">
             <form method="dialog" className="stack">
-              <h2 id="clear-title">Clear all {history.length} saved maps?</h2>
+              <h2 id="clear-title">Clear all {history.length} saved searches?</h2>
               <p className="hint">This removes them from this browser. Your current profile stays.</p>
               <div className="row-actions">
                 <button className="btn" value="clear" onClick={() => store.clearHistory()}>Clear history</button>
@@ -224,7 +224,7 @@ export function About() {
   return (
     <>
       <div className="page-head">
-        <h1>How the map is drawn</h1>
+        <h1>How matching works</h1>
         <p className="lede">
           Nextern is an explainable, content-based recommender. No black box: every match shows the skills behind it.
         </p>
@@ -268,16 +268,34 @@ export function About() {
   -H "Content-Type: application/json" \\
   -d '{"skills": "python, machine learning", "cgpa": 8.5}'`}</code></pre>
       </section>
+      <PhotoCredits />
     </>
+  );
+}
+
+function PhotoCredits() {
+  const photos = [HERO_PHOTO, ...Object.values(COMPANY_PHOTOS)];
+  return (
+    <section className="section" aria-labelledby="credits">
+      <h2 id="credits">Photo credits</h2>
+      <p className="hint">City photographs from Wikimedia Commons, shown at reduced size. They illustrate where each company's past interns were placed; they are not company imagery.</p>
+      <ul className="credits">
+        {photos.map((p) => (
+          <li key={p.src}>
+            <a href={p.page}>{p.title}</a> by {p.artist}, <a href={p.licenseUrl || p.page}>{p.license}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
 export function NotFound() {
   return (
     <div className="empty-state">
-      <h1>No station here</h1>
+      <h1>Page not found</h1>
       <p className="lede">That page doesn't exist.</p>
-      <Link className="btn" to="/">Back to your line</Link>
+      <Link className="btn" to="/">Back to your skills</Link>
     </div>
   );
 }

@@ -3,30 +3,31 @@
 **Live demo: [getnextern.onrender.com](https://getnextern.onrender.com)**
 _(free tier — the first request after idle can take ~50s to wake)_
 
-![Your matches: every company drawn as a metro line, its required skills as stations, with a "you are here" marker showing how far your skills reach](docs/screenshot-matches.png)
+![The Nextern board: your skills on the left, every company ranked beside them with what you have, what counts partially and what to learn](docs/screenshot-matches.png)
 
 An explainable, content-based recommender that matches students to internships. Every
 company is described by the skills it has historically required, and a student is scored
 by how well they cover them. Nothing is a black box: every match shows the skills that
 matched, the ones that count partially through a related skill, and the ones still to learn.
 
-The interface draws that idea literally. Each company is a metro line and its required
-skills are the stations: a solid ring is a skill you have, a dashed ring is a related skill
-that counts half (`Data science via Machine learning`), and a tick is a stop still ahead.
+The interface puts every company on one board. Each company module has the same three rows —
+**Have**, **Related** (a skill in the same family counts half, e.g. `Data science via Machine
+learning`) and **To learn** — so you can compare all 11 at a glance. Light and dark themes
+follow your system, with a toggle to switch.
 
-![Building your line: add skills one at a time and the closest company lines redraw live](docs/screenshot-profile.png)
+![Before any skills are added, every company shows what it asks for](docs/screenshot-profile.png)
 
 ## What you can do
 
-- **Build your line.** Add skills (with autocomplete from the ontology) and an optional
-  CGPA. The top three company lines redraw as you type, and skills the recommender doesn't
-  know are flagged instead of being silently ignored.
-- **Read every company.** The matches page ranks all 11 companies, closest first, each with
-  a fit band (strong / partial / reach), the skill breakdown and the next skill to learn.
-  If none of your skills are recognised, it says so rather than ranking guesswork.
+- **Add your skills.** Type them (with autocomplete from the ontology) and an optional
+  CGPA; the board re-sorts as you go, and skills the recommender doesn't know are flagged
+  instead of being silently ignored.
+- **Read every company.** All 11 companies, closest first, each with a fit band
+  (strong / partial / reach), the skill breakdown and, for the top three, the next skill to
+  learn. If none of your skills are recognised, it says so rather than ranking guesswork.
 - **Check a real posting.** Paste any job description: its required skills are extracted
-  and drawn as a line against your saved profile.
-- **Share or reopen a map.** Copy a link (`/map?skills=python,sql&cgpa=8.2`), or reopen any
+  and compared with your saved profile using the same breakdown.
+- **Share or reopen a map.** Copy a link (`/?skills=python,sql&cgpa=8.2`), or reopen any
   past map from History. Profile and history stay in your browser.
 - **AI copilot** *(optional)*. With an API key on the server, an LLM reads pasted resume
   text into skills you review before anything is ranked, writes a learning plan for the
@@ -34,7 +35,7 @@ that counts half (`Data science via Machine learning`), and a tick is a stop sti
   resume bullets for a chosen company without inventing experience. It only explains what
   the ontology computed; it never ranks companies itself.
 
-![The whole network: companies sharing a skill meet at white interchanges](docs/screenshot-network.png)
+![Insights: the skills each company asks for, with shared skills joined across companies](docs/screenshot-network.png)
 
 ## How it works
 
@@ -47,7 +48,7 @@ that counts half (`Data science via Machine learning`), and a tick is a stop sti
    student's CGPA is to that company's past interns. Coverage maps to a fit band: 70%+ is a
    strong fit, 40%+ partial, anything lower a reach.
 3. **Explanation and gaps.** Each match returns three buckets — **matched**, **related**
-   (with the family link) and **gap** (skills to learn) — which the UI draws as stations.
+   (with the family link) and **gap** (skills to learn) — the three rows on every company.
 
 > **Why not embeddings?** Static word embeddings were tried and rejected: on short tech
 > jargon they scored `react`↔`vue` ≈ 0.05 and `ML`↔`machine learning` ≈ 0.29 — worse than
@@ -71,6 +72,7 @@ sensible ranking, not a production benchmark.
 ├── train.py           # Builds the model bundle from the dataset
 ├── internship_data.csv
 ├── web/               # React + TypeScript frontend (Vite), builds into static/
+│                      #   city photos are hotlinked from Wikimedia Commons, credited on /about
 ├── tests/             # pytest suite for the recommender and the API
 ├── Dockerfile         # Node stage builds web/, Python stage serves it
 └── .github/workflows/ # CI: pytest, plus frontend tests and build

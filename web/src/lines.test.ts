@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chainBySharedSkills } from "./Info";
-import { herePosition, label, lineColour, progressText, stations } from "./lines";
+import { herePosition, label, progressText, stations } from "./lines";
 
 const google = {
   matched_skills: ["python", "machine learning"],
@@ -29,10 +29,6 @@ describe("line helpers", () => {
     expect(label("python")).toBe("Python");
   });
 
-  it("gives every company a stable colour", () => {
-    expect(lineColour("Google")).toBe(lineColour("Google"));
-    expect(lineColour("Some New Co")).toMatch(/^#[0-9a-f]{6}$/);
-  });
 
   it("chains companies that share skills next to each other", () => {
     const rows = chainBySharedSkills([
